@@ -110,10 +110,10 @@ enum msgType_e
 //--------------------------------------------------------------------------------
 // The queue message structure
 //--------------------------------------------------------------------------------
-struct queueMsg_t
+typedef struct queueMsg_t
 {
 	enum msgType_e	type;		///< the type of message
 	void * anyPtr;					///< the pointer to message (if any)
 	uint8_t	addr;						///< the source or destination address
 	uint8_t sapi;						///< the source or destination SAPI
-};
+}queueMsg_t;
