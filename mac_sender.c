@@ -96,6 +96,20 @@ void MacSender(void *argument)
 							myData[5+myData[4]] = (crc<<2);
 						break;
 						
+						
+						case TOKEN :
+							//I arrive here 
+							macSenderRx.type = TO_PHY;
+							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderRx, osPriorityNormal, osWaitForever);
+								
+						break;
+							
+						case DATA_IND :
+							
+						break;
+						
+						
+						
 						default :
 							
 						
