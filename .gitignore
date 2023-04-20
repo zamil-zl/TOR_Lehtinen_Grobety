@@ -1,11 +1,17 @@
 # Prerequisites
 *.d
 
+Objects/
+
 # Object files
 *.o
 *.ko
 *.obj
 *.elf
+*.crf
+*.lst
+*.axf
+*.htm
 
 # Linker output
 *.ilk
