@@ -34,7 +34,7 @@ void MacSender(void *argument)
 	const osMessageQueueAttr_t queue_macS_IN_attr = {
 	.name = "MAC_SENDER  "  	
 };
-	queue_macS_id = osMessageQueueNew(2,sizeof(struct queueMsg_t),&queue_macS_IN_attr);
+	queue_macS_IN_id = osMessageQueueNew(4,sizeof(struct queueMsg_t),&queue_macS_IN_attr);
 	
 	for (;;)														// loop until doomsday
 	{
@@ -76,23 +76,22 @@ void MacSender(void *argument)
 							crc = 0;
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);
 						
-							myData[0] = (macSenderRx.addr << 2);
-							myData[1] = macSenderRx.sapi;
-							myData[2] = (MYADDRESS << 2);
-							myData[3] = 0xA ;
+							myData[0] = (macSenderRx.addr << 2)+ macSenderRx.sapi;
+
+							myData[1] = (MYADDRESS << 2)+0xA ;
 							msg = ((char*)macSenderRx.anyPtr);
-							myData[4] = strlen(msg);
-							for(uint16_t i = 0; i<myData[4] ; i++){
-								myData[5+i] = msg[i];
+							myData[2] = strlen(msg);
+							for(uint16_t i = 0; i<myData[2] ; i++){
+								myData[3+i] = msg[i];
 							}
-							for(uint16_t i = 0; i<5+myData[4] ; i++){
+							for(uint16_t i = 0; i<4+myData[3] ; i++){
 								crc = myData[i];
 							}
-							myData[5+myData[4]] = (crc<<2);
+							myData[3+myData[2]] = (crc<<2);
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
-							tempQstatus = osMessageQueuePut(queue_macS_id, &macSenderTx, osPriorityNormal, osWaitForever);							
+							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);							
 							//TO DO : config the queu to block message to send until reicive token
 						break;
 						
@@ -103,25 +102,24 @@ void MacSender(void *argument)
 						
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
 						//indicates queue has a msg to send
-						if(tempQstatus_IN == osOK)
-						{
-									macSenderTx = macSenderRx_IN ;
-									tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-						}
-						else
-						{
-							
-						}
-					
-						
+							if(tempQstatus_IN == osOK)
+							{
+										macSenderTx = macSenderRx_IN ;
+										tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							}else
+							{
 							myToken = macSenderRx.anyPtr;
 							myToken->station_list[MYADDRESS] = 0x0A;
-		
+			
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myToken;
 							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-								
+							}
 						break;
+							
+						case DATABACK :
+							//TODO : HANDLE TOKEN SENDING AFTER DATA !
+						break; 
 
 						default :
 
