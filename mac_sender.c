@@ -19,6 +19,8 @@ void MacSender(void *argument)
 	char*msg;
 	TokenData *myToken;
 	uint8_t *myData ;
+	uint8_t *myDataBack ;
+
 	//DataInd *myData;
 	//DataControl myControl;
 	
@@ -76,7 +78,7 @@ void MacSender(void *argument)
 							crc = 0;
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);
 							myData[0] = 0;
-							myData[0] = (MYADDRESS << 2)+0xA ;
+							myData[0] = (MYADDRESS << 2)+ CHAT_SAPI ;
 							myData[1] = 0;
 							myData[1] = (macSenderRx.addr << 2)+ macSenderRx.sapi;
 							msg = ((char*)macSenderRx.anyPtr);
@@ -109,7 +111,6 @@ void MacSender(void *argument)
 							else{
 								
 								myToken->station_list[MYADDRESS] = 0x0A;
-				
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
@@ -117,7 +118,8 @@ void MacSender(void *argument)
 						break;
 							
 						case DATABACK :
-							if(macSenderRx[2+macSenderRx[2]]&3 = 3){
+							myDataBack = (uint8_t*)macSenderRx.anyPtr;
+							if(myDataBack[2+myDataBack[2]]&3 == 3){
 								myToken->station_list[MYADDRESS] = 0x0A;
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
