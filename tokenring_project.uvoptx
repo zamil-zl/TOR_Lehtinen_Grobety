@@ -200,7 +200,11 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\mac_receiver.c</Filename>
           <ExecCommand></ExecCommand>
+<<<<<<< Updated upstream
           <Expression>\\tokenring_project\mac_receiver.c\85</Expression>
+=======
+          <Expression>\\\mac_receiver.c\85</Expression>
+>>>>>>> Stashed changes
         </Bp>
         <Bp>
           <Number>3</Number>
