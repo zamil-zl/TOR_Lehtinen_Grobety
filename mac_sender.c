@@ -89,7 +89,7 @@ void MacSender(void *argument)
 							for(uint16_t i = 0; i<(2+myData[3]) ; i++){
 								crc += myData[i];
 							}
-							myData[2+myData[2]] = (crc<<2); 
+							myData[3+myData[2]] = (crc<<2); 
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
