@@ -61,7 +61,8 @@ void MacReceiver(void *argument)
 	frameHeader * frameHead;
 	frameStatus * frameStat;
 	uint8_t myCheckSum;
-	
+	for (;;)														// loop until doomsday
+	{
 	//receive my msg and place it in macRxTemp
 	rxStatus = osMessageQueueGet( queue_macR_id,&macRxTemp,NULL,osWaitForever); 
 	
@@ -175,5 +176,6 @@ void MacReceiver(void *argument)
 			}
 			
 		}
+	}
 	
 }
