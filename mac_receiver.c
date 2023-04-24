@@ -58,8 +58,8 @@ void MacReceiver(void *argument)
 	
 	queueMsg_t macRxTemp;							// queue message
 	osStatus_t rxStatus;											// return error code
-	frameHeader * frameHead;
-	frameStatus * frameStat;
+	frameHeader * frameHead = osMemoryPoolAlloc(memPool,osWaitForever);;
+	frameStatus * frameStat = osMemoryPoolAlloc(memPool,osWaitForever);;
 	uint8_t myCheckSum;
 	for (;;)														// loop until doomsday
 	{
@@ -84,8 +84,8 @@ void MacReceiver(void *argument)
 			else{
 				DebugFrame("I am a DATA");
 				//I analyse data
-				frameHead = analyse_Header((char *) macRxTemp.anyPtr); // update
-				frameStat = analyse_Status((char *) macRxTemp.anyPtr);
+				frameHead = analyse_Header(msgHeader); // update
+				frameStat = analyse_Status(msgHeader);
 				
 				macRxTemp.type = DATA_IND;
 				//identify if we are destination or if msg is broadcast
