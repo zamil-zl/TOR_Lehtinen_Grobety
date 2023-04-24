@@ -30,7 +30,6 @@ void MacSender(void *argument)
 	osStatus_t tempQstatus_IN;
 	
 	uint16_t crc;
-	osMessageQueueId_t queue_macS_id;
 	osMessageQueueId_t queue_macS_IN_id;
 	const osMessageQueueAttr_t queue_macS_IN_attr = {
 	.name = "MAC_SENDER  "  	
@@ -100,45 +99,36 @@ void MacSender(void *argument)
 						
 						case TOKEN :
 							//I arrive here 
-							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,osWaitForever);
-							macSenderTx = macSenderRx_IN ;
-							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 						
-
-							myToken = macSenderTx.anyPtr;
-							for( int i = 0; i < 15; i ++){	
-								//fill info for my station for time/chat sapi
-								if(i == MYADDRESS)
-								{
-									myToken->station_list[i] = 0xA;
-								}
-								//fill info for other station to 0								
-							}
-							myToken.type = TO_PHY;
-							macSenderTx = myToken;
+						
+							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
+						//indicates queue has a msg to send
+						if(tempQstatus_IN == osOK)
+						{
+									macSenderTx = macSenderRx_IN ;
+									tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+						}
+						else
+						{
+							
+						}
+					
+						
+							myToken = macSenderRx.anyPtr;
+							myToken->station_list[MYADDRESS] = 0x0A;
+		
+							macSenderTx.type = TO_PHY;
+							macSenderTx.anyPtr = myToken;
 							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								
 						break;
-						
-						
 
 						default :
-							
-						
+
 						break;
 						
-						
-					}
-			
-			
-			
-			
-			
-			
+					}	
 		}
-		
-		
-		
-	}
 	
+	}
 }
