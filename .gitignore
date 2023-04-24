@@ -1,7 +1,11 @@
 # Prerequisites
 *.d
 
+<<<<<<< Updated upstream
 Objects/
+=======
+Objects\
+>>>>>>> Stashed changes
 # Object files
 *.o
 *.ko
