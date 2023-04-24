@@ -61,6 +61,7 @@ void MacReceiver(void *argument)
 	frameHeader * frameHead;
 	frameStatus * frameStat;
 	uint8_t myCheckSum;
+	
 	//receive my msg and place it in macRxTemp
 	rxStatus = osMessageQueueGet( queue_macR_id,&macRxTemp,NULL,osWaitForever); 
 	
@@ -71,8 +72,7 @@ void MacReceiver(void *argument)
 		{
 			//IDENTIFYING BYTES	
 			//frameHead = (char *) macRxTemp.anyPtr; //before  
-			frameHead = analyse_Header((char *) macRxTemp.anyPtr); // update
-			frameStat = analyse_Status((char *) macRxTemp.anyPtr);
+			
 			//I am a TOKEN
 			if(msgHeader[0] == TOKEN_TAG) 
 			{
@@ -82,8 +82,11 @@ void MacReceiver(void *argument)
 			}
 			else{
 				DebugFrame("I am a DATA");
-				macRxTemp.type = DATA_IND;
+				//I analyse data
+				frameHead = analyse_Header((char *) macRxTemp.anyPtr); // update
+				frameStat = analyse_Status((char *) macRxTemp.anyPtr);
 				
+				macRxTemp.type = DATA_IND;
 				//identify if we are destination or if msg is broadcast
 												//MY address																//broadcast address
 				if(frameHead->dst_addr == MYADDRESS || frameHead->dst_addr == BROADCAST_ADDRESS)
@@ -101,37 +104,43 @@ void MacReceiver(void *argument)
 					{
 						frameStat->read = 1;
 						frameStat->acknowledge = 1;
+						
+						//Send msg to mac sender
+						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+										//identify dst SAPI == chat
+								if(frameHead->dst_sapi == CHAT_SAPI)
+								{
+									//give msg to  chat Rx
+										rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+								}
+								//identify dst SAPI == TIME
+								else if(frameHead->dst_sapi == TIME_SAPI)
+								{
+									//give msg to time Rx
+										rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+								}
+								//if nor time sapi nor chat sapi exist msg is a broadCast ??
+								else{
+									
+								}
+						
 					}
 					else
 					{
-					frameStat->read = 1;
-					frameStat->acknowledge = 0;
+						frameStat->read = 1;
+						frameStat->acknowledge = 0;
+							
+						//TODO : Indicate that we have an error	
 					}
-					//identify dst SAPI == chat
-					if(frameHead->dst_sapi == CHAT_SAPI)
-					{
-						//give msg to  chat Rx
-							rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-					}
-					//identify dst SAPI == TIME
-					else if(frameHead->dst_sapi == TIME_SAPI)
-					{
-						//give msg to time Rx
-							rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-					}
-					//if nor time sapi nor chat sapi exist msg is a broadCast ??
-					else{
-						
-						
-					}
-					
-					//check who is Source
+				
+					//CHECK OF THE SOURCE 
+					//I am the source 
 					if(frameHead->src_addr == MYADDRESS)
 					{
-						
+						//check if dst has red the msg correctly 
 						if(frameStat->read == 1)
 						{
-								
+								//check if dst computed the checkSum correctly
 								if(frameStat->acknowledge == 1) 
 								{
 										//GIVE TOKEN
@@ -151,7 +160,7 @@ void MacReceiver(void *argument)
 						
 					}
 					else {
-						
+						//IS IT A BROADCAST 
 						
 						
 					}
