@@ -75,19 +75,19 @@ void MacSender(void *argument)
 							//memory allocation of 100 bytes for my frame						
 							crc = 0;
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);
-						
-							myData[0] = (macSenderRx.addr << 2)+ macSenderRx.sapi;
-
-							myData[1] = (MYADDRESS << 2)+0xA ;
+							myData[0] = 0;
+							myData[0] = (MYADDRESS << 2)+0xA ;
+							myData[1] = 0;
+							myData[1] = (macSenderRx.addr << 2)+ macSenderRx.sapi;
 							msg = ((char*)macSenderRx.anyPtr);
 							myData[2] = strlen(msg);
 							for(uint16_t i = 0; i<myData[2] ; i++){
 								myData[3+i] = msg[i];
 							}
-							for(uint16_t i = 0; i<4+myData[3] ; i++){
-								crc = myData[i];
+							for(uint16_t i = 0; i<(2+myData[3]) ; i++){
+								crc += myData[i];
 							}
-							myData[3+myData[2]] = (crc<<2);
+							myData[2+myData[2]] = (crc<<2); 
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
@@ -98,22 +98,20 @@ void MacSender(void *argument)
 						
 						case TOKEN :
 							//I arrive here 
-						
-						
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
 						//indicates queue has a msg to send
 							if(tempQstatus_IN == osOK)
 							{
-										macSenderTx = macSenderRx_IN ;
-										tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-							}else
-							{
-							myToken = macSenderRx.anyPtr;
-							myToken->station_list[MYADDRESS] = 0x0A;
-			
-							macSenderTx.type = TO_PHY;
-							macSenderTx.anyPtr = myToken;
-							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+								macSenderTx = macSenderRx_IN ;
+								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							}
+							else{
+								myToken = macSenderRx.anyPtr;
+								myToken->station_list[MYADDRESS] = 0x0A;
+				
+								macSenderTx.type = TO_PHY;
+								macSenderTx.anyPtr = myToken;
+								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 						break;
 							
