@@ -109,7 +109,6 @@ void MacSender(void *argument)
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							else{
-								
 								myToken->station_list[MYADDRESS] = 0x0A;
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
@@ -119,14 +118,21 @@ void MacSender(void *argument)
 							
 						case DATABACK :
 							myDataBack = (uint8_t*)macSenderRx.anyPtr;
-							if(myDataBack[2+myDataBack[2]]&3 == 3){
+							if(myDataBack[2+myDataBack[2]]&3== 3){
 								myToken->station_list[MYADDRESS] = 0x0A;
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
-							else{
+							else if(myDataBack[2+myDataBack[2]]&2== 2){
 								macSenderTx = macSenderRx ;
+								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							}
+							else {
+								//rajouter info sur lcd
+								myToken->station_list[MYADDRESS] = 0x0A;
+								macSenderTx.type = TO_PHY;
+								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							
