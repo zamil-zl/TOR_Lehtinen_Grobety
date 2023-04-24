@@ -30,7 +30,7 @@ void MacReceiver(void *argument)
 		{
 				
 			frameHead = (char *) macRxTemp.anyPtr;
-			DebugFrame(frameHead);							// for debug info only
+			//DebugFrame(frameHead);							// for debug info only
 			//I am a TOKEN
 			if(frameHead[0] == 0xFF)
 			{
