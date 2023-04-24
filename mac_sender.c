@@ -100,13 +100,14 @@ void MacSender(void *argument)
 							//I arrive here 
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
 						//indicates queue has a msg to send
+							myToken = macSenderRx.anyPtr;
 							if(tempQstatus_IN == osOK)
 							{
 								macSenderTx = macSenderRx_IN ;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							else{
-								myToken = macSenderRx.anyPtr;
+								
 								myToken->station_list[MYADDRESS] = 0x0A;
 				
 								macSenderTx.type = TO_PHY;
@@ -116,7 +117,17 @@ void MacSender(void *argument)
 						break;
 							
 						case DATABACK :
-							//TODO : HANDLE TOKEN SENDING AFTER DATA !
+							if(macSenderRx[2+macSenderRx[2]]&3 = 3){
+								myToken->station_list[MYADDRESS] = 0x0A;
+								macSenderTx.type = TO_PHY;
+								macSenderTx.anyPtr = myToken;
+								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							}
+							else{
+								macSenderTx = macSenderRx ;
+								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							}
+							
 						break; 
 
 						default :
