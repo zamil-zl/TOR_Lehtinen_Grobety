@@ -91,11 +91,11 @@ void MacReceiver(void *argument)
 												//MY address																//broadcast address
 				if(frameHead.dst_addr == MYADDRESS || frameHead.dst_addr == BROADCAST_ADDRESS)
 				{
-					
+					uint16_t myCrc = 0;
 					//compute CheckSum
 					//msgHeader[2] = length of frame
 					//do I go to length or length - 1
-					for(int i = 0; i < msgHeader[2]; i++)
+					for(int i = 0; i < (msgHeader[2]+2); i++)
 					{
 						myCheckSum += msgHeader[i];
 					}
