@@ -106,6 +106,7 @@ void MacReceiver(void *argument)
 						frameStat.acknowledge = 1;
 						
 						//Send msg to mac sender
+						macRxTemp.type = DATABACK;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 										//identify dst SAPI == chat
 								if(frameHead.dst_sapi == CHAT_SAPI)
@@ -129,8 +130,9 @@ void MacReceiver(void *argument)
 					{
 						frameStat.read = 1;
 						frameStat.acknowledge = 0;
-							
-						//TODO : Indicate that we have an error	
+						macRxTemp.type = DATABACK;
+						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+	
 					}
 				
 					//CHECK OF THE SOURCE 
