@@ -91,7 +91,7 @@ void MacSender(void *argument)
 							for(uint16_t i = 0; i<myData[2] ; i++){
 								myData[3+i] = msg[i];
 							}
-							for(uint16_t i = 0; i<(2+myData[3]) ; i++){
+							for(uint16_t i = 0; i<(2+myData[2]) ; i++){
 								crc += myData[i];
 							}
 							myData[3+myData[2]] = (crc<<2); 
@@ -124,6 +124,9 @@ void MacSender(void *argument)
 								}
 								//if they are change in the station list -> send the new list
 								if(change){
+									macSenderTx.anyPtr = NULL;
+									macSenderTx.addr = 0;
+									macSenderTx.sapi = 0;
 									macSenderTx.type = TOKEN_LIST;
 									tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
 									change = false;
