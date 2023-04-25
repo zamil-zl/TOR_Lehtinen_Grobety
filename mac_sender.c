@@ -21,6 +21,7 @@ void MacSender(void *argument)
 	uint8_t *myData ;
 	uint8_t *myDataError ;
 	uint8_t *myDataBack ;
+	bool_t change;
 
 	//DataInd *myData;
 	//DataControl myControl;
@@ -61,10 +62,13 @@ void MacSender(void *argument)
 								if(i == MYADDRESS)
 								{
 									myToken->station_list[i] = 0xA;
+									gTokenInterface.myAddress = MYADDRESS;
+									change = false;
 								}
 								//fill info for other station to 0
 								else{
 									myToken->station_list[i] = 0;
+									gTokenInterface.station_list[i] = 0;
 								}
 								
 							}
@@ -81,7 +85,7 @@ void MacSender(void *argument)
 							myData[0] = 0;
 							myData[0] = (MYADDRESS << 3)+ CHAT_SAPI ;
 							myData[1] = 0;
-							myData[1] = (macSenderRx.addr << 2)+ macSenderRx.sapi;
+							myData[1] = (macSenderRx.addr << 3)+ macSenderRx.sapi;
 							msg = ((char*)macSenderRx.anyPtr);
 							myData[2] = strlen(msg);
 							for(uint16_t i = 0; i<myData[2] ; i++){
@@ -111,6 +115,19 @@ void MacSender(void *argument)
 							}
 							else{
 								myToken->station_list[MYADDRESS] = 0x0A;
+								//check if they are change in the station list
+								for(uint16_t i = 0; i<15 ; i++){
+									if(gTokenInterface.station_list[i] != myToken->station_list[i]){
+										gTokenInterface.station_list[i] = myToken->station_list[i];
+										change = true;
+									}	
+								}
+								//if they are change in the station list -> send the new list
+								if(change){
+									macSenderTx.type = TOKEN_LIST;
+									tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
+									change = false;
+								}
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
