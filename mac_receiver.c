@@ -144,6 +144,9 @@ void MacReceiver(void *argument)
 								if(frameStat.acknowledge == 1) 
 								{
 										//GIVE TOKEN
+									macRxTemp.type = TOKEN;
+									rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+			
 								}								
 								else
 								{
@@ -156,6 +159,11 @@ void MacReceiver(void *argument)
 						else
 						{
 							//INDICATE MAC ERROR AND GIVE TOKEN
+							
+							
+							macRxTemp.type = TOKEN;
+							rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+
 						}
 						
 					}
@@ -166,11 +174,23 @@ void MacReceiver(void *argument)
 					}
 					
 				}
-				//we are not destination
+				//we are not destination 
 				else {
-					macRxTemp.type = TO_PHY;
-					rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-				}
+					//am I the src
+					if(frameHead.src_addr == MYADDRESS)
+					{
+						//i give msg to sender so analyse and decide what to do
+						macRxTemp.type = DATABACK;
+						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+					}
+					else{
+						//need to pass msg to next colleague
+						macRxTemp.type = TO_PHY;
+						rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);					
+					}
+					
+					
+					}
 				
 			}
 			
