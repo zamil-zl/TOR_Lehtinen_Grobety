@@ -19,6 +19,7 @@ void MacSender(void *argument)
 	char*msg;
 	TokenData *myToken;
 	uint8_t *myData ;
+	uint8_t *myDataError ;
 	uint8_t *myDataBack ;
 
 	//DataInd *myData;
@@ -78,7 +79,7 @@ void MacSender(void *argument)
 							crc = 0;
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);
 							myData[0] = 0;
-							myData[0] = (MYADDRESS << 2)+ CHAT_SAPI ;
+							myData[0] = (MYADDRESS << 3)+ CHAT_SAPI ;
 							myData[1] = 0;
 							myData[1] = (macSenderRx.addr << 2)+ macSenderRx.sapi;
 							msg = ((char*)macSenderRx.anyPtr);
@@ -94,7 +95,7 @@ void MacSender(void *argument)
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
 							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);							
-							//TO DO : config the queu to block message to send until reicive token
+
 						break;
 						
 						
@@ -118,18 +119,29 @@ void MacSender(void *argument)
 							
 						case DATABACK :
 							myDataBack = (uint8_t*)macSenderRx.anyPtr;
+							// read and ack == 1 -> message read and all good -> send the token
 							if(myDataBack[2+myDataBack[2]]&3== 3){
 								myToken->station_list[MYADDRESS] = 0x0A;
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
+							// read ok ; ack = 0 -> message read but crc error -> resend message 
 							else if(myDataBack[2+myDataBack[2]]&2== 2){
 								macSenderTx = macSenderRx ;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
+							// read = 0 ; message never receive -> free the token ; send message error
 							else {
 								//rajouter info sur lcd
+								macSenderTx.type = MAC_ERROR;
+								for(uint16_t i = 0; i<myDataBack[2] ; i++){
+									myDataError[i] = myDataBack[3+i];
+								}
+								macSenderTx.anyPtr = myDataError;
+								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
+
+								
 								myToken->station_list[MYADDRESS] = 0x0A;
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
