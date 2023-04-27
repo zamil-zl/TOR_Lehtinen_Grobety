@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\tokenring_project.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\tokenring_project.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Thu Apr 27 19:34:49 2023
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Thu Apr 27 21:42:31 2023
 <BR><P>
 <H3>Maximum Stack Usage =        576 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -3070,7 +3070,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> main.o(i.main)
 </UL>
-<P><STRONG><a name="[94]"></a>MacReceiver</STRONG> (Thumb, 482 bytes, Stack size 24 bytes, mac_receiver.o(i.MacReceiver))
+<P><STRONG><a name="[94]"></a>MacReceiver</STRONG> (Thumb, 518 bytes, Stack size 24 bytes, mac_receiver.o(i.MacReceiver))
 <BR><BR>[Stack]<UL><LI>Max Depth = 224<LI>Call Chain = MacReceiver &rArr; showMsg &rArr; osMessageQueuePut &rArr; isrRtxMessageQueuePut &rArr; osRtxPostProcess &rArr; osRtxKernelErrorNotify &rArr; EvrRtxKernelErrorNotify &rArr; EventRecord2 &rArr; EventRecordItem
 </UL>
 <BR>[Calls]<UL><LI><a href="#[266]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;showMsg
@@ -3669,7 +3669,7 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MacReceiver
 </UL>
 
-<P><STRONG><a name="[265]"></a>analyse_state</STRONG> (Thumb, 56 bytes, Stack size 12 bytes, mac_receiver.o(i.analyse_state))
+<P><STRONG><a name="[265]"></a>analyse_state</STRONG> (Thumb, 68 bytes, Stack size 12 bytes, mac_receiver.o(i.analyse_state))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = analyse_state
 </UL>
 <BR>[Called By]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MacReceiver
@@ -5682,7 +5682,7 @@ Global Symbols
 <LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GTimerThreadHandler
 </UL>
 
-<P><STRONG><a name="[266]"></a>showMsg</STRONG> (Thumb, 122 bytes, Stack size 16 bytes, mac_receiver.o(i.showMsg))
+<P><STRONG><a name="[266]"></a>showMsg</STRONG> (Thumb, 108 bytes, Stack size 16 bytes, mac_receiver.o(i.showMsg))
 <BR><BR>[Stack]<UL><LI>Max Depth = 200<LI>Call Chain = showMsg &rArr; osMessageQueuePut &rArr; isrRtxMessageQueuePut &rArr; osRtxPostProcess &rArr; osRtxKernelErrorNotify &rArr; EvrRtxKernelErrorNotify &rArr; EventRecord2 &rArr; EventRecordItem
 </UL>
 <BR>[Calls]<UL><LI><a href="#[18e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMemoryPoolAlloc
