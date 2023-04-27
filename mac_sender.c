@@ -156,6 +156,7 @@ void MacSender(void *argument)
 							
 						// from MACReceiver
 						case DATABACK :
+							myDataBack = osMemoryPoolAlloc(memPool,osWaitForever);
 							myDataBack = (uint8_t*)macSenderRx.anyPtr;
 							macSenderTx.type = TO_PHY;
 							// read and ack == 1 -> message read and all good -> send the token
@@ -173,6 +174,7 @@ void MacSender(void *argument)
 							// read = 0 ; message never receive -> free the token ; send message error
 							else {
 								macSenderTx.type = MAC_ERROR;
+								myDataError = osMemoryPoolAlloc(memPool,osWaitForever);
 								for(uint16_t i = 0; i<myDataBack[2] ; i++){
 									myDataError[i] = myDataBack[3+i];
 								}
