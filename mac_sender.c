@@ -54,8 +54,7 @@ void MacSender(void *argument)
 							//memory allocation of 100 bytes for my frame
 							myToken = osMemoryPoolAlloc(memPool,osWaitForever);
 							//indicates that frame is a token	
-							myToken->token_id = TOKEN_TAG;
-							
+							myToken->token_id = TOKEN_TAG;						
 							for( int i = 0; i < 15; i ++)
 							{	
 								//fill info for my station for time/chat sapi
@@ -70,49 +69,53 @@ void MacSender(void *argument)
 									myToken->station_list[i] = 0;
 									gTokenInterface.station_list[i] = 0;
 								}
-								
 							}
+							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myToken;
 							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-								
 						break;
 							
+						// from CHAT Sender or Time Sender
 						case DATA_IND :
 							//memory allocation of 100 bytes for my frame						
 							crc = 0;
+							// control (2 bytes)
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);
 							myData[0] = 0;
 							myData[0] = (MYADDRESS << 3)+ CHAT_SAPI ;
 							myData[1] = 0;
 							myData[1] = (macSenderRx.addr << 3)+ macSenderRx.sapi;
 							msg = ((char*)macSenderRx.anyPtr);
+							// length (1 byte)
 							myData[2] = strlen(msg);
+							// User Data (length bytes)
 							for(uint16_t i = 0; i<myData[2] ; i++){
 								myData[3+i] = msg[i];
 							}
-							for(uint16_t i = 0; i<(2+myData[3]) ; i++){
+							// crc calculate
+							for(uint16_t i = 0; i<(3+myData[2]) ; i++){
 								crc += myData[i];
 							}
+							//crc + R&A = 0
 							myData[3+myData[2]] = (crc<<2); 
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
 							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);							
-
 						break;
 						
-						
-						case TOKEN :
-							//I arrive here 
+						// from MACReceiver
+						case TOKEN : 
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
-						//indicates queue has a msg to send
 							myToken = macSenderRx.anyPtr;
+							// message in qulist -> send message
 							if(tempQstatus_IN == osOK)
 							{
 								macSenderTx = macSenderRx_IN ;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
+							// qulist in empty -> send the token
 							else{
 								myToken->station_list[MYADDRESS] = 0x0A;
 								//check if they are change in the station list
@@ -124,51 +127,53 @@ void MacSender(void *argument)
 								}
 								//if they are change in the station list -> send the new list
 								if(change){
+									macSenderTx.anyPtr = NULL;
+									macSenderTx.addr = 0;
+									macSenderTx.sapi = 0;
 									macSenderTx.type = TOKEN_LIST;
 									tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
 									change = false;
 								}
+								
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 						break;
 							
+						// from MACReceiver
 						case DATABACK :
 							myDataBack = (uint8_t*)macSenderRx.anyPtr;
+							macSenderTx.type = TO_PHY;
 							// read and ack == 1 -> message read and all good -> send the token
 							if(myDataBack[2+myDataBack[2]]&3== 3){
 								myToken->station_list[MYADDRESS] = 0x0A;
-								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							// read ok ; ack = 0 -> message read but crc error -> resend message 
 							else if(myDataBack[2+myDataBack[2]]&2== 2){
+								myDataBack[2+myDataBack[2]]= myDataBack[2+myDataBack[2]]& 0xFC; //r&a -> 0
 								macSenderTx = macSenderRx ;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							// read = 0 ; message never receive -> free the token ; send message error
 							else {
-								//rajouter info sur lcd
 								macSenderTx.type = MAC_ERROR;
 								for(uint16_t i = 0; i<myDataBack[2] ; i++){
 									myDataError[i] = myDataBack[3+i];
 								}
 								macSenderTx.anyPtr = myDataError;
 								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
-
 								
 								myToken->station_list[MYADDRESS] = 0x0A;
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
-							
 						break; 
 
 						default :
-
 						break;
 						
 					}	
