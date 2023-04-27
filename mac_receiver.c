@@ -151,7 +151,7 @@ void MacReceiver(void *argument)
 					rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 				}
 				else{
-					DebugFrame("I am a DATA");
+					//DebugFrame("I am a DATA");
 					//I analyse data
 					
 					frameStatus frameStat;
@@ -198,20 +198,19 @@ void MacReceiver(void *argument)
 									//give back to phy and no DATABACK
 									
 											macRxTemp.type = TO_PHY;
-									framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
-									macRxTemp.anyPtr = framePtr;
-									rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-						
+								
 						}
 						else	//not co = R & A : 0 + send to phy
 						{
 							frameStat.read = 0; // depends if I am co
 							frameStat.acknowledge = 0;
-							framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
+							
+						}
+						
+						framePtr[framePtr[2]+3] = frameStat.acknowledge | frameStat.read << 1 | frameStat.checkSum << 2; 
 							macRxTemp.anyPtr = framePtr;
 							rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 		
-						}
 					
 							break;
 						
@@ -281,4 +280,5 @@ void MacReceiver(void *argument)
 		}
 				
 	}
+
 	
