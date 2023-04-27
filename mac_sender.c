@@ -60,7 +60,7 @@ void MacSender(void *argument)
 								//fill info for my station for time/chat sapi
 								if(i == MYADDRESS)
 								{
-									myToken->station_list[i] = 0xA;
+									myToken->station_list[i] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
 									gTokenInterface.myAddress = MYADDRESS;
 									change = false;
 								}
@@ -76,6 +76,14 @@ void MacSender(void *argument)
 							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 						break;
 							
+						case START:
+							gTokenInterface.connected = true;
+						break;
+						
+						case STOP:
+							gTokenInterface.connected = false ;
+						break;
+							
 						// from CHAT Sender or Time Sender
 						case DATA_IND :
 							//memory allocation of 100 bytes for my frame						
@@ -83,7 +91,12 @@ void MacSender(void *argument)
 							// control (2 bytes)
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);
 							myData[0] = 0;
-							myData[0] = (MYADDRESS << 3)+ CHAT_SAPI ;
+							if(macSenderRx.addr == BROADCAST_ADDRESS){
+								myData[0] = (MYADDRESS << 3)+ TIME_SAPI ;
+							}
+							else{
+								myData[0] = (MYADDRESS << 3)+ CHAT_SAPI ;
+							}
 							myData[1] = 0;
 							myData[1] = (macSenderRx.addr << 3)+ macSenderRx.sapi;
 							msg = ((char*)macSenderRx.anyPtr);
@@ -117,7 +130,7 @@ void MacSender(void *argument)
 							}
 							// qulist in empty -> send the token
 							else{
-								myToken->station_list[MYADDRESS] = 0x0A;
+								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
 								//check if they are change in the station list
 								for(uint16_t i = 0; i<15 ; i++){
 									if(gTokenInterface.station_list[i] != myToken->station_list[i]){
@@ -147,7 +160,7 @@ void MacSender(void *argument)
 							macSenderTx.type = TO_PHY;
 							// read and ack == 1 -> message read and all good -> send the token
 							if(myDataBack[2+myDataBack[2]]&3== 3){
-								myToken->station_list[MYADDRESS] = 0x0A;
+								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
@@ -166,7 +179,7 @@ void MacSender(void *argument)
 								macSenderTx.anyPtr = myDataError;
 								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								
-								myToken->station_list[MYADDRESS] = 0x0A;
+								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
