@@ -65,6 +65,8 @@ void analyse_Header(char* framePtr, frameHeader * result)
 enum state analyse_state(frameHeader myFrameHeader) 
 {
 	enum state result;
+	// TODO think about checking if you're the dst / not / broadcast
+	//once done at teh following check if you're src - to know if databck or no
 	if(myFrameHeader.dst_addr == MYADDRESS && myFrameHeader.src_addr == MYADDRESS)
 	{
 		result = iAmDst_Src;
@@ -75,14 +77,15 @@ enum state analyse_state(frameHeader myFrameHeader)
 		result = iAmDst;
 		return result;
 	}
+	else if (myFrameHeader.dst_addr == BROADCAST_ADDRESS){
+		return broadcast;
+	}
 	else if(myFrameHeader.src_addr == MYADDRESS)
 	{
 		result = iAmSrc;
 		return result;
 	}
-	else if (myFrameHeader.dst_addr == BROADCAST_ADDRESS){
-		return broadcast;
-	}
+	
 	else{
 		//error case
 	}
