@@ -159,13 +159,13 @@ void MacSender(void *argument)
 							myDataBack = (uint8_t*)macSenderRx.anyPtr;
 							macSenderTx.type = TO_PHY;
 							// read and ack == 1 -> message read and all good -> send the token
-							if(myDataBack[2+myDataBack[2]]&3== 3){
+							if(myDataBack[3+myDataBack[2]]&3== 3){
 								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							// read ok ; ack = 0 -> message read but crc error -> resend message 
-							else if(myDataBack[2+myDataBack[2]]&2== 2){
+							else if(myDataBack[3+myDataBack[2]]&2== 2){
 								myDataBack[2+myDataBack[2]]= myDataBack[2+myDataBack[2]]& 0xFC; //r&a -> 0
 								macSenderTx = macSenderRx ;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
