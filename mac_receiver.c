@@ -16,10 +16,10 @@ typedef struct frameHeader
 
 typedef struct frameStatus
 {
-	
+	uint8_t checkSum;
 	bool acknowledge;
 	bool read;
-	uint8_t checkSum;
+	
 	
 }frameStatus;
 
@@ -66,7 +66,7 @@ void MacReceiver(void *argument)
 	//receive my msg and place it in macRxTemp
 	rxStatus = osMessageQueueGet( queue_macR_id,&macRxTemp,NULL,osWaitForever); 
 	
-	char * msgHeader = (char *) macRxTemp.anyPtr;
+	char * framePtr = (char *) macRxTemp.anyPtr;
 	
 	
 	if(rxStatus == osOK)
@@ -75,7 +75,7 @@ void MacReceiver(void *argument)
 			//frameHead = (char *) macRxTemp.anyPtr; //before  
 			
 			//I am a TOKEN
-			if(msgHeader[0] == TOKEN_TAG) 
+			if(framePtr[0] == TOKEN_TAG) 
 			{
 				//I send my TOKEN back to MAC sender
 				macRxTemp.type = TOKEN;
@@ -86,8 +86,8 @@ void MacReceiver(void *argument)
 				//I analyse data
 				frameHeader frameHead;
 				frameStatus frameStat;
-				analyse_Header(msgHeader, &frameHead); // update
-				analyse_Status(msgHeader,&frameStat);
+				analyse_Header(framePtr, &frameHead); // update
+				analyse_Status(framePtr,&frameStat);
 				
 				macRxTemp.type = DATA_IND;
 				//identify if we are destination or if msg is broadcast
@@ -96,11 +96,11 @@ void MacReceiver(void *argument)
 				{
 					myCheckSum = 0;
 					//compute CheckSum
-					//msgHeader[2] = length of frame
+					//framePtr[2] = length of frame
 					//do I go to length or length - 1
-					for(int i = 0; i < (msgHeader[2]+3); i++)
+					for(int i = 0; i < (framePtr[2]+3); i++)
 					{
-						myCheckSum += msgHeader[i];
+						myCheckSum += framePtr[i];
 					}
 					//keep just 6 LSB of crc
 					myCheckSum = myCheckSum & 0x3F;
@@ -112,6 +112,7 @@ void MacReceiver(void *argument)
 						
 						//Send msg to mac sender
 						macRxTemp.type = DATABACK;
+						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 										//identify dst SAPI == chat
 								if(frameHead.dst_sapi == CHAT_SAPI)
@@ -136,6 +137,7 @@ void MacReceiver(void *argument)
 						frameStat.read = 1;
 						frameStat.acknowledge = 0;
 						macRxTemp.type = DATABACK;
+						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 	
 					}
