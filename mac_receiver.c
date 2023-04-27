@@ -70,10 +70,13 @@ enum state analyse_state(frameHeader myFrameHeader)
 		result = iAmDst;
 		return result;
 	}
-	else if(myFrameHeader.dst_addr == MYADDRESS)
+	else if(myFrameHeader.src_addr == MYADDRESS)
 	{
-		result = broadcast;
+		result = iAmSrc;
 		return result;
+	}
+	else{
+		return broadcast;
 	}
 	
 }
@@ -97,340 +100,221 @@ void MacReceiver(void *argument)
 	
 	if(rxStatus == osOK)
 		{
-			//IDENTIFYING BYTES	
-			//frameHead = (char *) macRxTemp.anyPtr; //before  
-			
-			//I am a TOKEN
-			if(framePtr[0] == TOKEN_TAG) 
-			{
-				//I send my TOKEN back to MAC sender
-				macRxTemp.type = TOKEN;
-				rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-			}
-			else{
-				DebugFrame("I am a DATA");
-				//I analyse data
-				frameHeader frameHead;
-				frameStatus frameStat;
-				analyse_Header(framePtr, &frameHead); // update
-				analyse_Status(framePtr,&frameStat);
+				//IDENTIFYING BYTES	
+				//frameHead = (char *) macRxTemp.anyPtr; //before  
 				
-				macRxTemp.type = DATA_IND;
-				//identify if we are destination or if msg is broadcast
-												//MY address																//broadcast address
-				msgState = analyse_state(frameHead);
-				
-				
-				
-				switch(msgState)
+				//I am a TOKEN
+				if(framePtr[0] == TOKEN_TAG) 
 				{
-					case iAmDst:
-						myCheckSum = 0;
-					//compute CheckSum
-					//framePtr[2] = length of frame
-					//do I go to length or length - 1
-					for(int i = 0; i < (framePtr[2]+3); i++)
-					{
-						myCheckSum += framePtr[i];
-					}
-					//keep just 6 LSB of crc
-					myCheckSum = myCheckSum & 0x3F;
-					//CS ok or no 
-					if(frameStat.checkSum == myCheckSum)
-					{
-						frameStat.read = 1;
-						frameStat.acknowledge = 1;
-						
-						//Send msg to mac sender
-						macRxTemp.type = DATABACK;
-						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
-						macRxTemp.anyPtr = framePtr;
-						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-						
-						macRxTemp.type = DATA_IND;
-						if(frameHead.dst_sapi == CHAT_SAPI)
-								{
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
-									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
-									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to  chat Rx
-										rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-								//identify dst SAPI == TIME
-								else if(frameHead.dst_sapi == TIME_SAPI)
-								{
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
-									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
-									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to time Rx
-									rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-						}
-					else //checksum not ok
-					{
-						//give back to phy and no DATABACK
-						frameStat.read = 1;
-						frameStat.acknowledge = 0;
-						macRxTemp.type = DATABACK;
-						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
-						macRxTemp.anyPtr = framePtr;
-						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-	
-					}
-					
-						break;
-					
-					case iAmDst_Src :
-						//I give databack so sender free token // no touch to any bits
-						macRxTemp.type = DATABACK;
-						//read And ACK to Change????
-					
-					
-						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-							
-					
-						//identify sapi to show in LCD
-						macRxTemp.type = DATA_IND;
-						if(frameHead.dst_sapi == CHAT_SAPI)
-								{
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
-									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
-									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to  chat Rx
-										rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-								//identify dst SAPI == TIME
-								else if(frameHead.dst_sapi == TIME_SAPI)
-								{
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
-									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
-									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to time Rx
-									rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-						
-						
-					break;
-					
-					
-					case iAmSrc :
-						
-					macRxTemp.type = DATABACK;
+					//I send my TOKEN back to MAC sender
+					macRxTemp.type = TOKEN;
 					rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-							
-					
-						
-					
-					break;
-					
-					
-					case broadcast: 
-						
-					//identify sapi to show in LCD
-						macRxTemp.type = DATA_IND;
-						if(frameHead.dst_sapi == CHAT_SAPI)
-								{
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
-									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
-									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to  chat Rx
-										rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-								//identify dst SAPI == TIME
-								else if(frameHead.dst_sapi == TIME_SAPI)
-								{
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
-									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
-									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to time Rx
-									rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-					//continue pass broadcast
-					if(frameHead.dst_addr != MYADDRESS)			
-					{
-					macRxTemp.type = TO_PHY;
-					rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-					}
-					else {
-					macRxTemp.type = TO_PHY;
-					//rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-					//what do we do
-					}
-						
-					break;
-					
-					
-					default :
-						
-					
-					break;
 				}
+				else{
+					DebugFrame("I am a DATA");
+					//I analyse data
+					frameHeader frameHead;
+					frameStatus frameStat;
+					analyse_Header(framePtr, &frameHead); // update
+					analyse_Status(framePtr,&frameStat);
 					
-			}
-			
-		}
-		
-	}
-				
-				/*if(frameHead.dst_addr == MYADDRESS)
-				{
-					myCheckSum = 0;
-					//compute CheckSum
-					//framePtr[2] = length of frame
-					//do I go to length or length - 1
-					for(int i = 0; i < (framePtr[2]+3); i++)
+					macRxTemp.type = DATA_IND;
+					//identify if we are destination or if msg is broadcast
+													//MY address																//broadcast address
+					msgState = analyse_state(frameHead);
+					
+					
+					
+					switch(msgState)
 					{
-						myCheckSum += framePtr[i];
-					}
-					//keep just 6 LSB of crc
-					myCheckSum = myCheckSum & 0x3F;
-					//CS ok or no 
-					if(frameStat.checkSum == myCheckSum)
-					{
-						frameStat.read = 1;
-						frameStat.acknowledge = 1;
-						
-						//Send msg to mac sender
-						macRxTemp.type = DATABACK;
-						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
-						macRxTemp.anyPtr = framePtr;
-						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-							*/			//identify dst SAPI == chat
-							/*	if(frameHead.dst_sapi == CHAT_SAPI)
-								{
-									macRxTemp.type = DATA_IND;
-									//i fill data info into .anyPtr
-									for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
+						case iAmDst:
+							myCheckSum = 0;
+						//compute CheckSum
+						//framePtr[2] = length of frame
+						//do I go to length or length - 1
+						for(int i = 0; i < (framePtr[2]+3); i++)
+						{
+							myCheckSum += framePtr[i];
+						}
+						//keep just 6 LSB of crc
+						myCheckSum = myCheckSum & 0x3F;
+						//CS ok or no 
+						if(frameStat.checkSum == myCheckSum)
+						{
+							frameStat.read = 1;
+							frameStat.acknowledge = 1;
+							
+							//Send msg to mac sender
+							macRxTemp.type = TO_PHY;
+							framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
+							macRxTemp.anyPtr = framePtr;
+							rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+							
+							macRxTemp.type = DATA_IND;
+							if(frameHead.dst_sapi == CHAT_SAPI)
 									{
-										//I want the user data starting in byte 3
-										framePtr[i] = framePtr[i+3];
+										//I get rid of status byte
+										*framePtr = *framePtr >> 1;
+										//i fill data info into .anyPtr
+										for(uint8_t i = 0; i < (frameHead.userDataLength) ; i++)
+										{
+											//I want the user data starting in byte 3
+											framePtr[i] = framePtr[i+3];
+										}
+										//I fill src addr and src sapi
+										macRxTemp.anyPtr = framePtr;
+										macRxTemp.addr = frameHead.src_addr;
+										macRxTemp.sapi = frameHead.src_sapi;
+										//give msg to  chat Rx
+											rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
 									}
-									//I fill src addr and src sapi after
-									framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
-									macRxTemp.anyPtr = framePtr;
-									//give msg to  chat Rx
-										rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-								//identify dst SAPI == TIME
-								else if(frameHead.dst_sapi == TIME_SAPI)
-								{
-									macRxTemp.type = DATA_IND;
-									//give msg to time Rx
-									rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}*/
-								//if nor time sapi nor chat sapi exist msg is a broadCast ??
-								/*else{
-									
-								}
-						
-					}
-					else
-					{
-						//give back to phy and no DATABACK
-						frameStat.read = 1;
-						frameStat.acknowledge = 0;
-						macRxTemp.type = DATABACK;
-						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
-						macRxTemp.anyPtr = framePtr;
-						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-	
-					}*/
-				
-					//CHECK OF THE SOURCE 
-					//I am the source 
-					/*if(frameHead.src_addr == MYADDRESS)
-					{
-						//check if dst has red the msg correctly 
-						if(frameStat.read == 1)
+									//identify dst SAPI == TIME
+									else if(frameHead.dst_sapi == TIME_SAPI)
+									{
+										//I get rid of status byte
+										*framePtr = *framePtr >> 1;
+										//i fill data info into .anyPtr
+										for(uint8_t i = 0; i < (frameHead.userDataLength) ; i++)
+										{
+											//I want the user data starting in byte 3
+											framePtr[i] = framePtr[i+3];
+										}
+										//I fill src addr and src sapi
+										macRxTemp.anyPtr = framePtr;
+										macRxTemp.addr = frameHead.src_addr;
+										macRxTemp.sapi = frameHead.src_sapi;
+										//give msg to  chat Rx
+											rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+							}
+						else //checksum not ok
 						{
-								//check if dst computed the checkSum correctly
-								if(frameStat.acknowledge == 1) 
-								{
-										//GIVE MSG NO CHANGE
-									macRxTemp.type = DATABACK;
-									rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-			
-								}								
-								else
-								{
-									macRxTemp.type = DATABACK;
-									rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								}
-								
-						}
-						else
-						{
-							//INDICATE read bit not 
+							//give back to phy and no DATABACK
+							frameStat.read = 1;
+							frameStat.acknowledge = 0;
 							macRxTemp.type = DATABACK;
+							framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
+							macRxTemp.anyPtr = framePtr;
 							rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+		
 						}
 						
-					}
-					else {
-						//IS IT A BROADCAST 
+							break;
+						
+						case iAmDst_Src :
+							//I give databack so sender free token // no touch to any bits
+							macRxTemp.type = DATABACK;
+							//read And ACK to Change????
+						
+							rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+								
+						
+							//identify sapi to show in LCD
+							macRxTemp.type = DATA_IND;
+							if(frameHead.dst_sapi == CHAT_SAPI)
+									{
+										//i fill data info into .anyPtr
+										for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
+										{
+											//I want the user data starting in byte 3
+											framePtr[i] = framePtr[i+3];
+										}
+										//I fill src addr and src sapi after
+										framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
+										macRxTemp.anyPtr = framePtr;
+										//give msg to  chat Rx
+											rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+									}
+									//identify dst SAPI == TIME
+									else if(frameHead.dst_sapi == TIME_SAPI)
+									{
+										//i fill data info into .anyPtr
+										for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
+										{
+											//I want the user data starting in byte 3
+											framePtr[i] = framePtr[i+3];
+										}
+										//I fill src addr and src sapi after
+										framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
+										macRxTemp.anyPtr = framePtr;
+										//give msg to time Rx
+										rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+									}
+							
+							
+						break;
 						
 						
-					}
-					
-				}*/
-				//we are not destination 
-				//else {
-					//am I the src
-					/*if(frameHead.src_addr == MYADDRESS)
-					{
-						//i give msg to sender so analyse and decide what to do
+						case iAmSrc :
+							
 						macRxTemp.type = DATABACK;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-					}
-					else{
-						//need to pass msg to next colleague
+								
+						
+							
+						
+						break;
+						
+						
+						case broadcast: 
+							
+						//identify sapi to show in LCD
+							macRxTemp.type = DATA_IND;
+							if(frameHead.dst_sapi == CHAT_SAPI)
+									{
+										//i fill data info into .anyPtr
+										for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
+										{
+											//I want the user data starting in byte 3
+											framePtr[i] = framePtr[i+3];
+										}
+										//I fill src addr and src sapi after
+										framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
+										macRxTemp.anyPtr = framePtr;
+										//give msg to  chat Rx
+											rxStatus = osMessageQueuePut(queue_chatR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+									}
+									//identify dst SAPI == TIME
+									else if(frameHead.dst_sapi == TIME_SAPI)
+									{
+										//i fill data info into .anyPtr
+										for(uint8_t i = 0; i < (frameHead.userDataLength-3) ; i++)
+										{
+											//I want the user data starting in byte 3
+											framePtr[i] = framePtr[i+3];
+										}
+										//I fill src addr and src sapi after
+										framePtr[frameHead.userDataLength] = frameHead.src_addr + frameHead.src_sapi;
+										macRxTemp.anyPtr = framePtr;
+										//give msg to time Rx
+										rxStatus = osMessageQueuePut(queue_timeR_id, &macRxTemp, osPriorityNormal, osWaitForever);
+									}
+						//continue pass broadcast
+						if(frameHead.dst_addr != MYADDRESS)			
+						{
 						macRxTemp.type = TO_PHY;
-						rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);					
+						rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+						}
+						else {
+						macRxTemp.type = TO_PHY;
+						//rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+						//what do we do
+						}
+							
+						break;
+						
+						
+						default :
+							
+						
+						break;
 					}
-					
-					
-					}
+						
+				}
 				
 			}
 			
 		}
+				
 	}
-	*/
-//}
+	
 }
