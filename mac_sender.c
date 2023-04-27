@@ -177,6 +177,7 @@ void MacSender(void *argument)
 									myDataError[i] = myDataBack[3+i];
 								}
 								macSenderTx.anyPtr = myDataError;
+								macSenderTx.addr = myDataBack[1]>>3;
 								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								
 								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
