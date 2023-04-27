@@ -92,28 +92,28 @@ void showMsg(uint8_t correctSapi)
 	
 			dataIndMsg.type = DATA_IND;
 		char * lcdMsg = osMemoryPoolAlloc(memPool,osWaitForever);
-										//I get rid of status byte
-										//*framePtr = *framePtr >> 1;
-										//i fill data info into .anyPtr
-										for(uint8_t i = 0; i < (frameHead.userDataLength) ; i++)
-										{
-											//I want the user data starting in byte 3
-											lcdMsg[i] = framePtr[i+3];
-										}
-										lcdMsg[frameHead.userDataLength+1] = '\0';
-										//I fill src addr and src sapi
-										dataIndMsg.anyPtr = lcdMsg;
-										dataIndMsg.addr = frameHead.src_addr;
-										dataIndMsg.sapi = frameHead.src_sapi;
-										//give msg to  chat Rx
-										if(correctSapi == CHAT_SAPI)
-										{
-											rxStatus = osMessageQueuePut(queue_chatR_id, &dataIndMsg, osPriorityNormal, osWaitForever);
-										}
-										else if (correctSapi == TIME_SAPI){
-										rxStatus = osMessageQueuePut(queue_timeR_id, &dataIndMsg, osPriorityNormal, osWaitForever);	
-										}
-	
+			//I get rid of status byte
+			//*framePtr = *framePtr >> 1;
+			//i fill data info into .anyPtr
+			for(uint8_t i = 0; i < (frameHead.userDataLength) ; i++)
+			{
+				//I want the user data starting in byte 3
+				lcdMsg[i] = framePtr[i+3];
+			}
+			lcdMsg[frameHead.userDataLength] = '\0';
+			//I fill src addr and src sapi
+			dataIndMsg.anyPtr = lcdMsg;
+			dataIndMsg.addr = frameHead.src_addr;
+			dataIndMsg.sapi = frameHead.src_sapi;
+			//give msg to  chat Rx
+			if(correctSapi == CHAT_SAPI)
+			{
+				rxStatus = osMessageQueuePut(queue_chatR_id, &dataIndMsg, osPriorityNormal, osWaitForever);
+			}
+			else if (correctSapi == TIME_SAPI){
+			rxStatus = osMessageQueuePut(queue_timeR_id, &dataIndMsg, osPriorityNormal, osWaitForever);	
+			}
+
 	
 }
 
