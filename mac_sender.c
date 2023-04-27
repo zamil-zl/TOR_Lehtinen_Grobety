@@ -184,6 +184,7 @@ void MacSender(void *argument)
 								for(uint16_t i = 0; i<myDataBack[2] ; i++){
 									myDataError[i] = myDataBack[3+i];
 								}
+								//myDataError[myDataBack[2]+1] = 0 //VERIFIE !!!
 								macSenderTx.anyPtr = myDataError;
 								macSenderTx.addr = myDataBack[1]>>3;
 								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
