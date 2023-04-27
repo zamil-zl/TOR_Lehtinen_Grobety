@@ -113,6 +113,7 @@ void MacReceiver(void *argument)
 						//Send msg to mac sender
 						macRxTemp.type = DATABACK;
 						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
+						macRxTemp.anyPtr = framePtr;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 										//identify dst SAPI == chat
 								if(frameHead.dst_sapi == CHAT_SAPI)
@@ -134,10 +135,12 @@ void MacReceiver(void *argument)
 					}
 					else
 					{
+						//give back to phy and no DATABACK
 						frameStat.read = 1;
 						frameStat.acknowledge = 0;
 						macRxTemp.type = DATABACK;
 						framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
+						macRxTemp.anyPtr = framePtr;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 	
 					}
