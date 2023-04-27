@@ -80,8 +80,11 @@ enum state analyse_state(frameHeader myFrameHeader)
 		result = iAmSrc;
 		return result;
 	}
-	else{
+	else if (myFrameHeader.dst_addr == BROADCAST_ADDRESS){
 		return broadcast;
+	}
+	else{
+		//error case
 	}
 	
 }
@@ -106,13 +109,14 @@ void showMsg(uint8_t correctSapi)
 			dataIndMsg.addr = frameHead.src_addr;
 			dataIndMsg.sapi = frameHead.src_sapi;
 			//give msg to  chat Rx
-			if(correctSapi == CHAT_SAPI)
+
+			osMessageQueueId_t miaou = queue_chatR_id;
+			if(correctSapi == TIME_SAPI)
 			{
-				rxStatus = osMessageQueuePut(queue_chatR_id, &dataIndMsg, osPriorityNormal, osWaitForever);
+				miaou = queue_timeR_id;	
 			}
-			else if (correctSapi == TIME_SAPI){
-			rxStatus = osMessageQueuePut(queue_timeR_id, &dataIndMsg, osPriorityNormal, osWaitForever);	
-			}
+			
+			rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
 
 	
 }
@@ -175,49 +179,48 @@ void MacReceiver(void *argument)
 						//keep just 6 LSB of crc
 						myCheckSum = myCheckSum & 0x3F;
 						//CS ok or no 
-						if(frameStat.checkSum == myCheckSum)
+						//I am connected
+						if(gTokenInterface.connected){
+							frameStat.read = 1; // depends if I am co
+								if(frameStat.checkSum == myCheckSum)
+								{
+									frameStat.acknowledge = 1;
+									dataIndMsg.type = DATA_IND;
+									
+									showMsg(frameHead.dst_sapi);
+									
+								}
+								else //checksum not ok
+								{
+										frameStat.acknowledge = 0;
+								}
+								
+									//give back to phy and no DATABACK
+									
+											macRxTemp.type = TO_PHY;
+									framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
+									macRxTemp.anyPtr = framePtr;
+									rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+						
+						}
+						else	//not co = R & A : 0 + send to phy
 						{
-							frameStat.read = 1;
-							frameStat.acknowledge = 1;
-							
-							//Send msg to mac sender
-							macRxTemp.type = TO_PHY;
+							frameStat.read = 0; // depends if I am co
+							frameStat.acknowledge = 0;
 							framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
 							macRxTemp.anyPtr = framePtr;
 							rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-							
-							dataIndMsg.type = DATA_IND;
-							
-							showMsg(frameHead.dst_sapi);
-							/*if(frameHead.dst_sapi == CHAT_SAPI)
-									{
-											showMsg(frameHead.dst_sapi);
-									}
-									//identify dst SAPI == TIME
-									else if(frameHead.dst_sapi == TIME_SAPI)
-									{
-										
-									}*/
-								}
-						else //checksum not ok
-						{
-							//give back to phy and no DATABACK
-							frameStat.read = 1;
-							frameStat.acknowledge = 0;
-							macRxTemp.type = DATABACK;
-							framePtr[framePtr[2]+3] = frameStat.checkSum + frameStat.read + frameStat.acknowledge; 
-							macRxTemp.anyPtr = framePtr;
-							rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 		
 						}
-						
+					
 							break;
 						
 						case iAmDst_Src :
 							//I give databack so sender free token // no touch to any bits
 							macRxTemp.type = DATABACK;
-							//read And ACK to Change????
-						
+						//verify checksum 
+						//CRC OK = show lcd if connected / good sapi + give mc sender that will destroy the msg 
+						//and change read & ack 
 							rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 								
 						
@@ -233,26 +236,32 @@ void MacReceiver(void *argument)
 							
 						macRxTemp.type = DATABACK;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								
-						
 							
-						
 						break;
 						
 						
 						case broadcast: 
 							
 						//identify sapi to show in LCD
-					showMsg(frameHead.dst_sapi);
+					
 						//continue pass broadcast
-						if(frameHead.dst_addr != MYADDRESS)			
+						if(frameHead.src_addr != MYADDRESS)			
 						{
+							//show lcd if necessary
+							//if I am connected i show 
+							if(gTokenInterface.connected)
+							{
+								//showLCD
+								showMsg(frameHead.dst_sapi);
+							}
+							//if not connected just pass on 
+							
 						macRxTemp.type = TO_PHY;
 						rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 						}
 						else {
-						macRxTemp.type = TO_PHY;
-						//rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+						macRxTemp.type = DATABACK;
+						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 						//what do we do
 						}
 							
