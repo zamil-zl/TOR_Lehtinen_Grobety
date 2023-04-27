@@ -27,13 +27,16 @@ typedef struct frameStatus
 //return a pointer on my frameHeader struct
 void analyse_Status(char* framePtr,frameStatus * result)
 {
-		frameStatus *myFrame; //osMemoryPoolAlloc(memPool,osWaitForever); if no mempool alloc pointer = NULL ???
-
+		
+		char statusByte = framePtr[framePtr[2] + 3]; 
+		
+	
+	
 		//we do a mask on the first bit to have only the ack bit
-		myFrame->acknowledge = framePtr[0] & 0x1;
+		result->acknowledge = statusByte & 0x1;
 		//get rid of three first bits leaves us with src_addr
-		myFrame->read = framePtr[0] & 0x2;
-		myFrame->checkSum = framePtr[0] >> 2;
+		result->read = (statusByte & 0x2) == 2;
+		result->checkSum = (statusByte & 0xFC) >> 2;
 	
 }
 
@@ -91,14 +94,16 @@ void MacReceiver(void *argument)
 												//MY address																//broadcast address
 				if(frameHead.dst_addr == MYADDRESS || frameHead.dst_addr == BROADCAST_ADDRESS)
 				{
-					uint16_t myCrc = 0;
+					myCheckSum = 0;
 					//compute CheckSum
 					//msgHeader[2] = length of frame
 					//do I go to length or length - 1
-					for(int i = 0; i < (msgHeader[2]+2); i++)
+					for(int i = 0; i < (msgHeader[2]+3); i++)
 					{
 						myCheckSum += msgHeader[i];
 					}
+					//keep just 6 LSB of crc
+					myCheckSum = myCheckSum & 0x3F;
 					//CS ok or no 
 					if(frameStat.checkSum == myCheckSum)
 					{
