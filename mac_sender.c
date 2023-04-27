@@ -74,6 +74,7 @@ void MacSender(void *argument)
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myToken;
 							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							gTokenInterface.connected = true;
 						break;
 							
 						case START:
@@ -130,7 +131,12 @@ void MacSender(void *argument)
 							}
 							// qulist in empty -> send the token
 							else{
-								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
+								if(gTokenInterface.connected){
+									myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
+								}
+								else{
+									myToken->station_list[MYADDRESS] = 0;
+								}
 								//check if they are change in the station list
 								for(uint16_t i = 0; i<15 ; i++){
 									if(gTokenInterface.station_list[i] != myToken->station_list[i]){
