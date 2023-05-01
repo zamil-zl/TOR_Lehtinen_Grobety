@@ -116,7 +116,8 @@ void MacSender(void *argument)
 							myData[3+myData[2]] = (crc<<2); 
 							
 							macSenderTx.type = TO_PHY;
-							macSenderTx.anyPtr = myData;
+							//macSenderTx.anyPtr = myData;
+							memcpy(macSenderTx.anyPtr,myData, 50);
 							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);	
 							
 							retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE macSenderRx.anyPtr!
@@ -127,6 +128,7 @@ void MacSender(void *argument)
 						case TOKEN : 
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
 							myToken = macSenderRx.anyPtr;
+							memcpy(myToken,macSenderRx.anyPtr,50);
 							// message in qulist -> send message
 							if(tempQstatus_IN == osOK)
 							{
@@ -138,6 +140,7 @@ void MacSender(void *argument)
 								macSenderTx.anyPtr = myDataCopy;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								
+								//ICI MYDATA CHANGE VALUE
 								retCode = osMemoryPoolFree(memPool,macSenderRx_IN.anyPtr);					//FREE macSenderRx_IN.anyPtr!
 								CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
 								
