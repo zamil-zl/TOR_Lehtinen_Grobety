@@ -288,8 +288,14 @@ void MacReceiver(void *argument)
 						}
 						else {
 						macRxTemp.type = DATABACK;
+						//necessary to calculate CRC ????
+						frameStat.acknowledge = 1;
+						showMsg(frameHead.dst_sapi);
+						frameStat.read = 1;
+						framePtr[framePtr[2]+3] = frameStat.acknowledge | frameStat.read << 1 | frameStat.checkSum << 2; 
+						macRxTemp.anyPtr = framePtr;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-						//what do we do
+								//what do we do
 						}
 							
 						break;
