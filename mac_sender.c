@@ -181,7 +181,7 @@ void MacSender(void *argument)
 							else {
 								macSenderTx.type = MAC_ERROR;
 								myDataError = osMemoryPoolAlloc(memPool,osWaitForever);
-								sprintf(myDataError, "MAC error : \n Station %d don't answer \0", (myDataBack[1]>>3));  
+								sprintf(myDataError, "MAC error : \n Station %d don't answer \0", (myDataBack[1]>>3)+1);  
 								//myDataError[myDataBack[2]+1] = 0 //VERIFIE !!!
 								macSenderTx.anyPtr = myDataError;
 								macSenderTx.addr = myDataBack[1]>>3;
