@@ -65,6 +65,8 @@ void analyse_Header(char* framePtr, frameHeader * result)
 enum state analyse_state(frameHeader myFrameHeader) 
 {
 	enum state result;
+	// TODO think about checking if you're the dst / not / broadcast
+	//once done at teh following check if you're src - to know if databck or no
 	if(myFrameHeader.dst_addr == MYADDRESS && myFrameHeader.src_addr == MYADDRESS)
 	{
 		result = iAmDst_Src;
@@ -75,14 +77,15 @@ enum state analyse_state(frameHeader myFrameHeader)
 		result = iAmDst;
 		return result;
 	}
+	else if (myFrameHeader.dst_addr == BROADCAST_ADDRESS){
+		return broadcast;
+	}
 	else if(myFrameHeader.src_addr == MYADDRESS)
 	{
 		result = iAmSrc;
 		return result;
 	}
-	else if (myFrameHeader.dst_addr == BROADCAST_ADDRESS){
-		return broadcast;
-	}
+	
 	else{
 		//error case
 	}
@@ -119,6 +122,25 @@ void showMsg(uint8_t correctSapi)
 			rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
 
 	
+}
+
+bool verify_CRC(uint8_t crcToCheck)
+{
+
+	uint8_t myCheckSum;
+
+	
+	
+			for(int i = 0; i < (framePtr[2]+3); i++)
+			{
+				myCheckSum += framePtr[i];
+			}
+			//keep just 6 LSB of crc
+			myCheckSum = myCheckSum & 0x3F;
+						
+						
+	return (crcToCheck == myCheckSum);
+		
 }
 
 
@@ -172,17 +194,18 @@ void MacReceiver(void *argument)
 						//compute CheckSum
 						//framePtr[2] = length of frame
 						//do I go to length or length - 1
-						for(int i = 0; i < (framePtr[2]+3); i++)
-						{
-							myCheckSum += framePtr[i];
-						}
+						//for(int i = 0; i < (framePtr[2]+3); i++)
+						//{
+							//myCheckSum += framePtr[i];
+						//}
 						//keep just 6 LSB of crc
-						myCheckSum = myCheckSum & 0x3F;
+						//myCheckSum = myCheckSum & 0x3F;
 						//CS ok or no 
 						//I am connected
 						if(gTokenInterface.connected){
 							frameStat.read = 1; // depends if I am co
-								if(frameStat.checkSum == myCheckSum)
+								//if(frameStat.checkSum == myCheckSum)
+								if(verify_CRC(frameStat.checkSum))
 								{
 									frameStat.acknowledge = 1;
 									dataIndMsg.type = DATA_IND;
@@ -196,7 +219,6 @@ void MacReceiver(void *argument)
 								}
 								
 									//give back to phy and no DATABACK
-									
 											macRxTemp.type = TO_PHY;
 								
 						}
@@ -206,7 +228,7 @@ void MacReceiver(void *argument)
 							frameStat.acknowledge = 0;
 							
 						}
-						
+						//putting back status byte to correct place
 						framePtr[framePtr[2]+3] = frameStat.acknowledge | frameStat.read << 1 | frameStat.checkSum << 2; 
 							macRxTemp.anyPtr = framePtr;
 							rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
@@ -216,17 +238,25 @@ void MacReceiver(void *argument)
 						
 						case iAmDst_Src :
 							//I give databack so sender free token // no touch to any bits
-							macRxTemp.type = DATABACK;
+						macRxTemp.type = DATABACK;
 						//verify checksum 
-						//CRC OK = show lcd if connected / good sapi + give mc sender that will destroy the msg 
-						//and change read & ack 
-							rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								
-						
-							//identify sapi to show in LCD
-							macRxTemp.type = DATA_IND;
-							showMsg(frameHead.dst_sapi);
-							
+						if(verify_CRC(frameStat.checkSum))
+						{
+									//verify connection state
+									if(gTokenInterface.connected)
+									{
+										//change read & ack 
+										frameStat.acknowledge = 1;
+										showMsg(frameHead.dst_sapi);
+										frameStat.read = 1;
+										framePtr[framePtr[2]+3] = frameStat.acknowledge | frameStat.read << 1 | frameStat.checkSum << 2; 
+										macRxTemp.anyPtr = framePtr;
+										rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+									}
+									else{
+									// nothing should happen bcse I am not connected		
+									}
+						}	
 							
 						break;
 						
@@ -243,10 +273,9 @@ void MacReceiver(void *argument)
 							
 						//identify sapi to show in LCD
 					
-						//continue pass broadcast
+						//continue pass broadcast + no change of read & ack
 						if(frameHead.src_addr != MYADDRESS)			
 						{
-							//show lcd if necessary
 							//if I am connected i show 
 							if(gTokenInterface.connected)
 							{
@@ -254,7 +283,6 @@ void MacReceiver(void *argument)
 								showMsg(frameHead.dst_sapi);
 							}
 							//if not connected just pass on 
-							
 						macRxTemp.type = TO_PHY;
 						rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 						}
