@@ -116,7 +116,8 @@ void MacSender(void *argument)
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
-							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);							
+							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);	
+							osMemoryPoolFree(memPool,&myData);
 						break;
 						
 						// from MACReceiver
@@ -191,7 +192,10 @@ void MacSender(void *argument)
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = myToken;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+								osMemoryPoolFree(memPool,&myDataError);
 							}
+							osMemoryPoolFree(memPool,&myDataBack);
+							
 						break; 
 
 						default :
