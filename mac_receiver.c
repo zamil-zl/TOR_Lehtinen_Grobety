@@ -127,7 +127,7 @@ void showMsg(uint8_t correctSapi)
 bool verify_CRC(uint8_t crcToCheck)
 {
 
-	uint8_t myCheckSum;
+	uint8_t myCheckSum = 0;
 
 	
 	
@@ -151,7 +151,7 @@ void MacReceiver(void *argument)
 	queueMsg_t macRxTemp;							// queue message
 	//frameHeader * frameHead = osMemoryPoolAlloc(memPool,osWaitForever);;
 	//frameStatus * frameStat = osMemoryPoolAlloc(memPool,osWaitForever);;
-	uint8_t myCheckSum;
+	//uint8_t myCheckSum;
 	for (;;)														// loop until doomsday
 	{
 	//receive my msg and place it in macRxTemp
@@ -190,7 +190,7 @@ void MacReceiver(void *argument)
 					switch(msgState)
 					{
 						case iAmDst:
-							myCheckSum = 0;
+							
 						//compute CheckSum
 						//framePtr[2] = length of frame
 						//do I go to length or length - 1
