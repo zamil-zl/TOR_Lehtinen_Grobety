@@ -19,7 +19,7 @@ void MacSender(void *argument)
 	char*msg;
 	TokenData *myToken;
 	uint8_t *myData ;
-	uint8_t *myDataError ;
+	char*myDataError ;
 	uint8_t *myDataBack ;
 	bool_t change;
 
@@ -181,9 +181,8 @@ void MacSender(void *argument)
 							else {
 								macSenderTx.type = MAC_ERROR;
 								myDataError = osMemoryPoolAlloc(memPool,osWaitForever);
-								for(uint16_t i = 0; i<myDataBack[2] ; i++){
-									myDataError[i] = myDataBack[3+i];
-								}
+								sprintf(myDataError, "MAC error : \n Station %d don't answer \0", (myDataBack[1]>>3));  
+								//myDataError[myDataBack[2]+1] = 0 //VERIFIE !!!
 								macSenderTx.anyPtr = myDataError;
 								macSenderTx.addr = myDataBack[1]>>3;
 								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
