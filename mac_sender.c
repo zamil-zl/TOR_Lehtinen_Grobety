@@ -95,12 +95,8 @@ void MacSender(void *argument)
 							//memory allocation of 100 bytes for my frame						
 							crc = 0;
 							// control (2 bytes)
-<<<<<<< Updated upstream
-							myData = osMemoryPoolAlloc(memPool,osWaitForever);
-=======
 							myData = osMemoryPoolAlloc(memPool,osWaitForever);   			//ALLOC MY DATA  !
 //							macSenderTx.anyPtr = osMemoryPoolAlloc(memPool,osWaitForever);
->>>>>>> Stashed changes
 							myData[0] = 0;
 							if(macSenderRx.addr == BROADCAST_ADDRESS){
 								myData[0] = (MYADDRESS << 3)+ TIME_SAPI ;
@@ -126,27 +122,14 @@ void MacSender(void *argument)
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
-<<<<<<< Updated upstream
-							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);	
-							osMemoryPoolFree(memPool,&myData);
-=======
 							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);								
 							retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE string from app
 							CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);							
->>>>>>> Stashed changes
 						break;
 						
 						// from MACReceiver
 						case TOKEN : 
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
-<<<<<<< Updated upstream
-							myToken = macSenderRx.anyPtr;
-							// message in qulist -> send message
-							if(tempQstatus_IN == osOK)
-							{
-								macSenderTx = macSenderRx_IN ;
-								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-=======
 							//memcpy(myToken,macSenderRx.anyPtr,50);
 							tokenPtr = macSenderRx.anyPtr;
 							// message in qulist -> send message
@@ -159,7 +142,6 @@ void MacSender(void *argument)
 								memcpy(originalPtr, macSenderRx_IN.anyPtr,50);
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								
->>>>>>> Stashed changes
 							}
 							// qulist in empty -> send the token
 							else{
@@ -195,21 +177,6 @@ void MacSender(void *argument)
 							
 						// from MACReceiver
 						case DATABACK :
-<<<<<<< Updated upstream
-							myDataBack = osMemoryPoolAlloc(memPool,osWaitForever);
-							myDataBack = (uint8_t*)macSenderRx.anyPtr;
-							macSenderTx.type = TO_PHY;
-							// read and ack == 1 -> message read and all good -> send the token
-							if(myDataBack[3+myDataBack[2]]&3== 3){
-								myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
-								macSenderTx.anyPtr = myToken;
-								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-							}
-							// read ok ; ack = 0 -> message read but crc error -> resend message 
-							else if(myDataBack[3+myDataBack[2]]&2== 2){
-								myDataBack[2+myDataBack[2]]= myDataBack[2+myDataBack[2]]& 0xFC; //r&a -> 0
-								macSenderTx = macSenderRx ;
-=======
 							//myDataBack = osMemoryPoolAlloc(memPool,osWaitForever);       		//ALLOC MY DATA BACK !
 							//memcpy(myDataBack, macSenderRx.anyPtr, 50);
 							myDataBack = macSenderRx.anyPtr;
@@ -244,7 +211,6 @@ void MacSender(void *argument)
 								
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = tokenPtr;
->>>>>>> Stashed changes
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 							// read = 0 ; message never receive -> free the token ; send message error
@@ -270,12 +236,8 @@ void MacSender(void *argument)
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								osMemoryPoolFree(memPool,&myDataError);
 							}
-<<<<<<< Updated upstream
-							osMemoryPoolFree(memPool,&myDataBack);
-=======
 		
 							
->>>>>>> Stashed changes
 							
 						break; 
 
