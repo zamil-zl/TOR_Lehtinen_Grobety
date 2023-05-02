@@ -153,6 +153,7 @@
           <Name>UL2CM3(-S0 -C0 -P0 -FD20010000 -FC1000 -FN1 -FF0STM32F7x_1024 -FS08000000 -FL0100000 -FP0($$Device:STM32F746NGHx$CMSIS\Flash\STM32F7x_1024.FLM))</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
+<<<<<<< Updated upstream
       <Breakpoint>
         <Bp>
           <Number>0</Number>
@@ -219,18 +220,30 @@
           <Expression>\\tokenring_project\mac_sender.c\118</Expression>
         </Bp>
       </Breakpoint>
+=======
+      <Breakpoint/>
+>>>>>>> Stashed changes
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
           <ItemText>sai</ItemText>
         </Ww>
+        <Ww>
+          <count>1</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>tokenPtr</ItemText>
+        </Ww>
       </WatchWindow1>
       <MemoryWindow1>
         <Mm>
           <WinNumber>1</WinNumber>
           <SubType>0</SubType>
+<<<<<<< Updated upstream
           <ItemText> myData</ItemText>
+=======
+          <ItemText>framePtr</ItemText>
+>>>>>>> Stashed changes
           <AccSizeX>0</AccSizeX>
         </Mm>
       </MemoryWindow1>
