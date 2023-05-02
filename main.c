@@ -335,6 +335,12 @@ uint32_t HAL_GetTick(void)
 	return osKernelGetTickCount();
 }
 
+void assert_failed(uint8_t* file, uint32_t line)
+{
+	while(1) {
+		__ASM("nop");
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////////////
 /// \brief Init all and start RTX5

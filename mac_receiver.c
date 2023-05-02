@@ -14,8 +14,7 @@ typedef struct frameHeader
 	uint8_t src_addr;
 	uint8_t dst_sapi;
 	uint8_t dst_addr;
-	uint8_t userDataLength
-	
+	uint8_t userDataLength;	
 }frameHeader;
 
 frameHeader frameHead;
@@ -315,4 +314,4 @@ void MacReceiver(void *argument)
 				
 	}
 
-	
+
