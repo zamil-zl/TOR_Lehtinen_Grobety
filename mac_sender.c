@@ -25,6 +25,8 @@ void MacSender(void *argument)
 	uint8_t *myDataBack ;
 	bool_t change;
 
+		osStatus_t retCode;
+
 	//DataInd *myData;
 	//DataControl myControl;
 	
@@ -55,7 +57,7 @@ void MacSender(void *argument)
 						case NEW_TOKEN :
 							//memory allocation of 100 bytes for my frame
 							myToken = osMemoryPoolAlloc(memPool,osWaitForever);
-							macSenderTx.anyPtr = osMemoryPoolAlloc(memPool,osWaitForever);
+							//macSenderTx.anyPtr = osMemoryPoolAlloc(memPool,osWaitForever);
 							//indicates that frame is a token	
 							myToken->token_id = TOKEN_TAG;						
 							for( int i = 0; i < 15; i ++)
@@ -123,8 +125,8 @@ void MacSender(void *argument)
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
 							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);								
-							retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE string from app
-							CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);							
+							//retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE string from app
+							//CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);							
 						break;
 						
 						// from MACReceiver
@@ -170,7 +172,6 @@ void MacSender(void *argument)
 								
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = tokenPtr;
-								//memcpy(macSenderTx.anyPtr,myToken, 50);
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 							}
 						break;
@@ -185,8 +186,8 @@ void MacSender(void *argument)
 							if(myDataBack[3+myDataBack[2]]&3== 3){								
 								
 								// free databack
-								retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE MY DATA BACK !
-								CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
+								//retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE MY DATA BACK !
+								//CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
 								// free original
 								retCode = osMemoryPoolFree(memPool,originalPtr);					//FREE MY DATA BACK !
 								CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
@@ -201,8 +202,8 @@ void MacSender(void *argument)
 								//myDataBack[2+myDataBack[2]]= myDataBack[2+myDataBack[2]]& 0xFC; //r&a -> 0
 								
 								// free databack
-								retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE MY DATA BACK !
-								CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
+								//retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE MY DATA BACK !
+								//CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
 								// copy original to malloc
 								macSenderTx.anyPtr= osMemoryPoolAlloc(memPool,osWaitForever); 
 								memcpy(macSenderTx.anyPtr,originalPtr, 50);
@@ -230,11 +231,10 @@ void MacSender(void *argument)
 								retCode = osMemoryPoolFree(memPool,originalPtr);					//FREE MY DATA BACK !
 								CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
 								// send token
-								
 								macSenderTx.type = TO_PHY;
 								macSenderTx.anyPtr = tokenPtr;
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
-								osMemoryPoolFree(memPool,&myDataError);
+								//osMemoryPoolFree(memPool,myDataError);
 							}
 		
 							
