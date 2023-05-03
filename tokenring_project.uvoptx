@@ -157,25 +157,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>110</LineNumber>
-          <EnabledFlag>0</EnabledFlag>
-          <Address>134259522</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>.\mac_sender.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\tokenring_project\mac_sender.c\110</Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>232</LineNumber>
+          <LineNumber>269</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134260116</Address>
+          <Address>134260412</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -184,55 +168,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\mac_sender.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\tokenring_project\mac_sender.c\232</Expression>
-        </Bp>
-        <Bp>
-          <Number>2</Number>
-          <Type>0</Type>
-          <LineNumber>115</LineNumber>
-          <EnabledFlag>0</EnabledFlag>
-          <Address>134227542</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>.\chat_sender.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\tokenring_project\chat_sender.c\115</Expression>
-        </Bp>
-        <Bp>
-          <Number>3</Number>
-          <Type>0</Type>
-          <LineNumber>341</LineNumber>
-          <EnabledFlag>0</EnabledFlag>
-          <Address>134289564</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>.\main.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\tokenring_project\main.c\341</Expression>
-        </Bp>
-        <Bp>
-          <Number>4</Number>
-          <Type>0</Type>
-          <LineNumber>200</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134259956</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>.\mac_sender.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\tokenring_project\mac_sender.c\200</Expression>
+          <Expression>\\tokenring_project\mac_sender.c\269</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -250,9 +186,9 @@
       <MemoryWindow1>
         <Mm>
           <WinNumber>1</WinNumber>
-          <SubType>8</SubType>
-          <ItemText>0x200101D0</ItemText>
-          <AccSizeX>0</AccSizeX>
+          <SubType>0</SubType>
+          <ItemText>myDataBack</ItemText>
+          <AccSizeX>1</AccSizeX>
         </Mm>
       </MemoryWindow1>
       <MemoryWindow3>
