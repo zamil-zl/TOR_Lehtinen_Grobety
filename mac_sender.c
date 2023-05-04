@@ -17,27 +17,22 @@ void MacSender(void *argument)
 	} TokenData ;
 	
 	char*msg;
+	char*myDataError ;
+	
 	TokenData *myToken;
 	uint8_t * tokenPtr;
 	uint8_t try_crc;
 	uint8_t * originalPtr;
-	
-
-	
-	char*myDataError ;
 	uint8_t *myDataBack ;
+
 	bool_t change;
-
-		osStatus_t retCode;
-
-	//DataInd *myData;
-	//DataControl myControl;
 	
 	queueMsg_t macSenderRx;	
 	queueMsg_t macSenderRx_IN;	
 	queueMsg_t macSenderTx;	
 	queueMsg_t macSenderTx_T;
-	//osMessageQueueId_t queue_macS_temp;
+	
+	osStatus_t retCode;
 	osStatus_t tempQstatus;
 	osStatus_t tempQstatus_IN;
 	
@@ -57,14 +52,13 @@ void MacSender(void *argument)
 		{
 					switch(macSenderRx.type)
 					{
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 						//receive a message asking to create a token
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 						case NEW_TOKEN :
-							//memory allocation of 100 bytes for my frame
 							try_crc = 0;
 							assert_param(myToken == NULL);
-							myToken = osMemoryPoolAlloc(memPool,osWaitForever);
-							//macSenderTx.anyPtr = osMemoryPoolAlloc(memPool,osWaitForever);
-							//indicates that frame is a token	
+							myToken = osMemoryPoolAlloc(memPool,osWaitForever); //memory allocation of 100 bytes for my frame
 							myToken->token_id = TOKEN_TAG;						
 							for( int i = 0; i < 15; i ++)
 							{	
@@ -84,8 +78,7 @@ void MacSender(void *argument)
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myToken;
-							//memcpy(macSenderTx.anyPtr,myToken,50);
-							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
+							tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever); //memory free at PHY
 							gTokenInterface.connected = true;
 							myToken = NULL;
 										
@@ -98,14 +91,13 @@ void MacSender(void *argument)
 						case STOP:
 							gTokenInterface.connected = false ;
 						break;
-							
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////							
 						// from CHAT Sender or Time Sender
-						case DATA_IND :
-							//memory allocation of 100 bytes for my frame						
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						case DATA_IND :					
 							crc = 0;
 							// control (2 bytes)
-							myData = osMemoryPoolAlloc(memPool,osWaitForever);   			//ALLOC MY DATA  !
-//							macSenderTx.anyPtr = osMemoryPoolAlloc(memPool,osWaitForever);
+							myData = osMemoryPoolAlloc(memPool,osWaitForever);   			//memory allocation of 100 bytes for my frame	
 							myData[0] = 0;
 							if(macSenderRx.addr == BROADCAST_ADDRESS){
 								myData[0] = (MYADDRESS << 3)+ TIME_SAPI ;
@@ -126,7 +118,7 @@ void MacSender(void *argument)
 							for(uint16_t i = 0; i<(3+myData[2]) ; i++){
 								crc += myData[i];
 							}
-							//crc + R&A = 0
+							//crc + R&A = 0 (1 byte)
 							myData[3+myData[2]] = (crc<<2); 
 							
 							macSenderTx.type = TO_PHY;
@@ -135,28 +127,26 @@ void MacSender(void *argument)
 
 								if(tempQstatus == osErrorTimeout)
 								{
-										retCode = osMemoryPoolFree(memPool,macSenderTx.anyPtr);					//FREE string from app
+										retCode = osMemoryPoolFree(memPool,macSenderTx.anyPtr);					//FREE string SENDER from app => qulist full
 										CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);								
 								}									
 								
-							
-							retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE string from app
+							retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE string REICEIVE from app
 							CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);											
 						break;
-						
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////						
 						// from MACReceiver
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 						case TOKEN : 
 							
 							tokenPtr = macSenderRx.anyPtr;
 							myToken = (TokenData *) tokenPtr;
 							
 							tempQstatus_IN = osMessageQueueGet(queue_macS_IN_id,&macSenderRx_IN,NULL,NULL);
-							//memcpy(myToken,macSenderRx.anyPtr,50);
-																				
-							// message in qulist -> send message
+							
+							// Message to send in the qulist in													
 							if(tempQstatus_IN == osOK)
-							{
-								//myDataCopy = macSenderRx_IN.anyPtr;							
+							{					
 								macSenderTx.type = macSenderRx_IN.type;
 								macSenderTx.anyPtr = macSenderRx_IN.anyPtr;
 								
@@ -166,14 +156,16 @@ void MacSender(void *argument)
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								
 							}
-							// qulist in empty -> send the token
+							
+							// qulist is empty -> send the token
 							else{
 								if(gTokenInterface.connected){
 									myToken->station_list[MYADDRESS] = (1<<TIME_SAPI) | (1<<CHAT_SAPI);
 								}
 								else{
-									myToken->station_list[MYADDRESS] = 0;
+									myToken->station_list[MYADDRESS] = (1<<TIME_SAPI);
 								}
+								
 								//check if they are change in the station list
 								for(uint16_t i = 0; i<15 ; i++){
 									if(gTokenInterface.station_list[i] != myToken->station_list[i]){
@@ -181,6 +173,7 @@ void MacSender(void *argument)
 										change = true;
 									}	
 								}
+								
 								//if they are change in the station list -> send the new list
 								if(change){
 									macSenderTx.anyPtr = NULL;
@@ -199,13 +192,15 @@ void MacSender(void *argument)
 								myToken = NULL;
 							}
 						break;
-							
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////							
 						// from MACReceiver
-						case DATABACK :
-							
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						case DATABACK :	
 							myDataBack = macSenderRx.anyPtr;
 							macSenderTx.type = TO_PHY;
+						////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							// read and ack == 1 -> message read and all good -> send the token
+						////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							if((myDataBack[3+myDataBack[2]]&0x03) == 0x03){								
 								
 								// free databack
@@ -223,9 +218,12 @@ void MacSender(void *argument)
 								tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								tokenPtr = NULL;
 							}
+						////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							// read ok ; ack = 0 -> message read but crc error -> resend message 
+						////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							else if((myDataBack[3+myDataBack[2]]&0x02)== 0x02){
-								//myDataBack[2+myDataBack[2]]= myDataBack[2+myDataBack[2]]& 0xFC; //r&a -> 0
+								
+								//try to resend the message
 								if(try_crc<3){
 									
 									// free databack
@@ -241,7 +239,11 @@ void MacSender(void *argument)
 									// send the copy
 									tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								}
+								
+								// mesage still have bad reiver => free the token
 								else{
+									
+									//Send a repot to the LCD
 									try_crc = 0;
 									macSenderTx.type = MAC_ERROR;
 									myDataError = osMemoryPoolAlloc(memPool,osWaitForever);
@@ -269,12 +271,15 @@ void MacSender(void *argument)
 									tokenPtr = NULL;
 								}
 							}
+						////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							// read = 0 ; message never receive -> free the token ; send message error
+						////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 							else {
+								
+								//Send a repot to the LCD
 								macSenderTx.type = MAC_ERROR;
 								myDataError = osMemoryPoolAlloc(memPool,osWaitForever);
 								sprintf(myDataError, "MAC error : \nStation %d don't answer\n\0", (myDataBack[1]>>3)+1);  
-								//myDataError[myDataBack[2]+1] = 0 //VERIFIE !!!
 								macSenderTx.anyPtr = myDataError;
 								macSenderTx.addr = myDataBack[1]>>3;
 								tempQstatus = osMessageQueuePut(queue_lcd_id, &macSenderTx, osPriorityNormal, osWaitForever);
