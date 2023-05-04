@@ -99,7 +99,6 @@ void showMsg(uint8_t correctSapi)
 			dataIndMsg.type = DATA_IND;
 		char * lcdMsg = osMemoryPoolAlloc(memPool,osWaitForever);
 			//I get rid of status byte
-			//*framePtr = *framePtr >> 1;
 			//i fill data info into .anyPtr
 			for(uint8_t i = 0; i < (frameHead.userDataLength) ; i++)
 			{
