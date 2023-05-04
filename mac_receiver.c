@@ -5,7 +5,7 @@
 
 #include "main.h"
 
-enum state{iAmDst, iAmDst_Src, iAmNotDst,  iAmSrc, broadcast};
+enum state{iAmDst, iAmDst_Src, iAmNotDst,  iAmSrc, broadcast, iAmError};
 
 
 typedef struct frameHeader
@@ -31,14 +31,12 @@ typedef struct frameStatus
 }frameStatus;
 
 
-//return a pointer on my frameHeader struct
+//this function analyses the status byte of the frame
+//and fills the info of my frameStatus struct
 void analyse_Status(char* framePtr,frameStatus * result)
 {
 		
 		char statusByte = framePtr[framePtr[2] + 3]; 
-		
-	
-	
 		//we do a mask on the first bit to have only the ack bit
 		result->acknowledge = statusByte & 0x1;
 		//get rid of three first bits leaves us with src_addr
@@ -47,7 +45,8 @@ void analyse_Status(char* framePtr,frameStatus * result)
 	
 }
 
-//return a pointer of on my frameHeader struct
+//this function analyses the status byte of the frame
+//and fills the info of my frameStatus struct
 void analyse_Header(char* framePtr, frameHeader * result)
 {
 	
@@ -60,12 +59,12 @@ void analyse_Header(char* framePtr, frameHeader * result)
 		result->userDataLength = framePtr[2];
 	
 }
-
+//this function analyses destination and source info of the frame
+//and returns one possibility of the enum state 
 enum state analyse_state(frameHeader myFrameHeader) 
 {
 	enum state result;
-	// TODO think about checking if you're the dst / not / broadcast
-	//once done at teh following check if you're src - to know if databck or no
+
 	if(myFrameHeader.dst_addr == MYADDRESS && myFrameHeader.src_addr == MYADDRESS)
 	{
 		result = iAmDst_Src;
@@ -86,12 +85,14 @@ enum state analyse_state(frameHeader myFrameHeader)
 	}
 	
 	else{
-		//error case
+		result = iAmError;
+		return result;
 	}
 	
 }
 
-
+//this function is used to send the message to the lcd via either
+//time or chat service
 void showMsg(uint8_t correctSapi)
 {
 	
@@ -111,37 +112,29 @@ void showMsg(uint8_t correctSapi)
 			dataIndMsg.addr = frameHead.src_addr;
 			dataIndMsg.sapi = frameHead.src_sapi;
 			//give msg to  chat Rx
-			//this way doesn't handle when reception of non existent sapi
-			/*osMessageQueueId_t miaou = queue_chatR_id;
-			if(correctSapi == TIME_SAPI)
-			{
-				miaou = queue_timeR_id;	
-			}*/
 			osMessageQueueId_t miaou;
 			if(correctSapi == TIME_SAPI)
 			{
 				miaou = queue_timeR_id;	
 				rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
-
 			}
 			else if(correctSapi == CHAT_SAPI){
 				miaou = queue_chatR_id;	
 				rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
 			}
 			else{
-					
 				osMemoryPoolFree(memPool,lcdMsg);
 			}
 
 }
 
+//this function is used to calculate the crc and returns  
+//true if the crc is correct or false if it isn't
 bool verify_CRC(uint8_t crcToCheck)
 {
 
 	uint8_t myCheckSum = 0;
 
-	
-	
 			for(int i = 0; i < (framePtr[2]+3); i++)
 			{
 				myCheckSum += framePtr[i];
@@ -159,10 +152,8 @@ bool verify_CRC(uint8_t crcToCheck)
 void MacReceiver(void *argument)
 {
 	
-	queueMsg_t macRxTemp;							// queue message
-	//frameHeader * frameHead = osMemoryPoolAlloc(memPool,osWaitForever);;
-	//frameStatus * frameStat = osMemoryPoolAlloc(memPool,osWaitForever);;
-	//uint8_t myCheckSum;
+queueMsg_t macRxTemp;							// queue message
+
 	for (;;)														// loop until doomsday
 	{
 	//receive my msg and place it in macRxTemp
@@ -174,8 +165,6 @@ void MacReceiver(void *argument)
 	if(rxStatus == osOK)
 		{
 				//IDENTIFYING BYTES	
-				//frameHead = (char *) macRxTemp.anyPtr; //before  
-				
 				//I am a TOKEN
 				if(framePtr[0] == TOKEN_TAG) 
 				{
@@ -184,50 +173,54 @@ void MacReceiver(void *argument)
 					rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 				}
 				else{
-					//DebugFrame("I am a DATA");
-					//I analyse data
-					
+					//I analyse data					
 					frameStatus frameStat;
-					analyse_Header(framePtr, &frameHead); // update
+					analyse_Header(framePtr, &frameHead); 
 					analyse_Status(framePtr,&frameStat);
-					
 					macRxTemp.type = DATA_IND;
-					//identify if we are destination or if msg is broadcast
-													//MY address																//broadcast address
 					msgState = analyse_state(frameHead);
-					
-					
 					
 					switch(msgState)
 					{
 						case iAmDst:
 							
-						//compute CheckSum
-						//framePtr[2] = length of frame
-						//do I go to length or length - 1
-						//for(int i = 0; i < (framePtr[2]+3); i++)
-						//{
-							//myCheckSum += framePtr[i];
-						//}
-						//keep just 6 LSB of crc
-						//myCheckSum = myCheckSum & 0x3F;
-						//CS ok or no 
-						//I am connected
+						
+						if(frameHead.dst_sapi == TIME_SAPI )
+						{
+							dataIndMsg.type = DATA_IND;
+							
+									frameStat.acknowledge = 0;
+									frameStat.read = 0;
+							
+							if(verify_CRC(frameStat.checkSum))
+								{
+									frameStat.acknowledge = 1;
+									frameStat.read = 1;
+									showMsg(frameHead.dst_sapi);
+								}	
+									
+						}
+						else{
+						
 						if(gTokenInterface.connected){
-							frameStat.read = 1; // depends if I am co
-								//if(frameStat.checkSum == myCheckSum)
+							frameStat.read = 0; // by definition
 								if(verify_CRC(frameStat.checkSum))
 								{
 									frameStat.acknowledge = 1;
 									dataIndMsg.type = DATA_IND;
 									
-									showMsg(frameHead.dst_sapi);
+									if(frameHead.dst_sapi == TIME_SAPI || frameHead.dst_sapi == CHAT_SAPI)
+									{		
+											frameStat.read = 1;
+											showMsg(frameHead.dst_sapi);
+									}
 									
 								}
 								else //checksum not ok
 								{
 										frameStat.acknowledge = 0;
 								}
+								
 								
 									//give back to phy and no DATABACK
 											macRxTemp.type = TO_PHY;
@@ -239,10 +232,13 @@ void MacReceiver(void *argument)
 							frameStat.acknowledge = 0;
 							
 						}
+						
+					}
+						
 						//putting back status byte to correct place
 						framePtr[framePtr[2]+3] = frameStat.acknowledge | frameStat.read << 1 | frameStat.checkSum << 2; 
-							macRxTemp.anyPtr = framePtr;
-							rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
+						macRxTemp.anyPtr = framePtr;
+						rxStatus = osMessageQueuePut(queue_phyS_id, &macRxTemp, osPriorityNormal, osWaitForever);
 		
 					
 							break;
@@ -299,14 +295,15 @@ void MacReceiver(void *argument)
 						}
 						else {
 						macRxTemp.type = DATABACK;
-						//necessary to calculate CRC ????
-						frameStat.acknowledge = 1;
+						if(verify_CRC(frameStat.checkSum))
+						{
+							frameStat.acknowledge = 1;
+						}
 						showMsg(frameHead.dst_sapi);
 						frameStat.read = 1;
 						framePtr[framePtr[2]+3] = frameStat.acknowledge | frameStat.read << 1 | frameStat.checkSum << 2; 
 						macRxTemp.anyPtr = framePtr;
 						rxStatus = osMessageQueuePut(queue_macS_id, &macRxTemp, osPriorityNormal, osWaitForever);
-								//what do we do
 						}
 							
 						break;
