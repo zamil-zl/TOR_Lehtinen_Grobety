@@ -46,7 +46,7 @@ void MacSender(void *argument)
 	const osMessageQueueAttr_t queue_macS_IN_attr = {
 	.name = "MAC_SENDER  "  	
 };
-	queue_macS_IN_id = osMessageQueueNew(4,sizeof(struct queueMsg_t),&queue_macS_IN_attr);
+	queue_macS_IN_id = osMessageQueueNew(3,sizeof(struct queueMsg_t),&queue_macS_IN_attr);
 	
 	for (;;)														// loop until doomsday
 	{
@@ -131,7 +131,14 @@ void MacSender(void *argument)
 							
 							macSenderTx.type = TO_PHY;
 							macSenderTx.anyPtr = myData;
-							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);								
+							tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, 1);					
+
+								if(tempQstatus == osErrorTimeout)
+								{
+										retCode = osMemoryPoolFree(memPool,macSenderTx.anyPtr);					//FREE string from app
+										CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);								
+								}									
+								
 							
 							retCode = osMemoryPoolFree(memPool,macSenderRx.anyPtr);					//FREE string from app
 							CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);											
@@ -199,7 +206,7 @@ void MacSender(void *argument)
 							myDataBack = macSenderRx.anyPtr;
 							macSenderTx.type = TO_PHY;
 							// read and ack == 1 -> message read and all good -> send the token
-							if(myDataBack[3+myDataBack[2]]&3== 3){								
+							if((myDataBack[3+myDataBack[2]]&0x03) == 0x03){								
 								
 								// free databack
 								retCode = osMemoryPoolFree(memPool,myDataBack);					//FREE MY DATA BACK !
@@ -217,7 +224,7 @@ void MacSender(void *argument)
 								tokenPtr = NULL;
 							}
 							// read ok ; ack = 0 -> message read but crc error -> resend message 
-							else if(myDataBack[3+myDataBack[2]]&2== 2){
+							else if((myDataBack[3+myDataBack[2]]&0x02)== 0x02){
 								//myDataBack[2+myDataBack[2]]= myDataBack[2+myDataBack[2]]& 0xFC; //r&a -> 0
 								if(try_crc<3){
 									
@@ -232,7 +239,7 @@ void MacSender(void *argument)
 									try_crc++;
 									
 									// send the copy
-									tempQstatus = osMessageQueuePut(queue_macS_IN_id, &macSenderTx, osPriorityNormal, osWaitForever);
+									tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx, osPriorityNormal, osWaitForever);
 								}
 								else{
 									try_crc = 0;
@@ -257,6 +264,7 @@ void MacSender(void *argument)
 									// send token
 									macSenderTx_T.type = TO_PHY;
 									macSenderTx_T.anyPtr = tokenPtr;
+
 									tempQstatus = osMessageQueuePut(queue_phyS_id, &macSenderTx_T, osPriorityNormal, osWaitForever);
 									tokenPtr = NULL;
 								}
