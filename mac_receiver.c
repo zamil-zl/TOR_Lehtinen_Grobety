@@ -19,7 +19,7 @@ typedef struct frameHeader
 
 frameHeader frameHead;
 char * framePtr;
-	osStatus_t rxStatus;											// return error code
+osStatus_t rxStatus;											// return error code
 queueMsg_t dataIndMsg;	
 
 typedef struct frameStatus
@@ -111,16 +111,28 @@ void showMsg(uint8_t correctSapi)
 			dataIndMsg.addr = frameHead.src_addr;
 			dataIndMsg.sapi = frameHead.src_sapi;
 			//give msg to  chat Rx
-
-			osMessageQueueId_t miaou = queue_chatR_id;
+			//this way doesn't handle when reception of non existent sapi
+			/*osMessageQueueId_t miaou = queue_chatR_id;
 			if(correctSapi == TIME_SAPI)
 			{
 				miaou = queue_timeR_id;	
-			}
-			
-			rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
+			}*/
+			osMessageQueueId_t miaou;
+			if(correctSapi == TIME_SAPI)
+			{
+				miaou = queue_timeR_id;	
+				rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
 
-	
+			}
+			else if(correctSapi == CHAT_SAPI){
+				miaou = queue_chatR_id;	
+				rxStatus = osMessageQueuePut(miaou, &dataIndMsg, osPriorityNormal, osWaitForever);
+			}
+			else{
+					
+				osMemoryPoolFree(memPool,lcdMsg);
+			}
+
 }
 
 bool verify_CRC(uint8_t crcToCheck)
